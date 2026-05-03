@@ -1,0 +1,117 @@
+{
+  "name": "Contact",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome do respons\u00e1vel"
+    },
+    "email": {
+      "type": "string",
+      "description": "E-mail do contato"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Telefone/WhatsApp"
+    },
+    "party_name": {
+      "type": "string",
+      "description": "Nome do partido"
+    },
+    "party_acronym": {
+      "type": "string",
+      "description": "Sigla do partido"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "novo",
+        "contato_feito",
+        "interessado",
+        "proposta_enviada",
+        "fechado",
+        "atendimento_humano",
+        "inativo"
+      ],
+      "default": "novo"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags de interesse: Urgente, Pend\u00eancia 2024, CNPJ, Contas 2025"
+    },
+    "email_valid": {
+      "type": "boolean",
+      "default": true
+    },
+    "last_email_sent": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_email_opened": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_clicked": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "emails_sent_count": {
+      "type": "number",
+      "default": 0
+    },
+    "emails_opened_count": {
+      "type": "number",
+      "default": 0
+    },
+    "clicks_count": {
+      "type": "number",
+      "default": 0
+    },
+    "interest_area": {
+      "type": "string",
+      "enum": [
+        "regularizacao_cnpj",
+        "contas_2025",
+        "ambos",
+        "outros",
+        "nenhum"
+      ],
+      "default": "nenhum"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "planilha_importada",
+        "formulario_web",
+        "google_sheets",
+        "manual",
+        "whatsapp"
+      ],
+      "default": "manual"
+    },
+    "whatsapp_conversation": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "ai_summary": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "email"
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "name": "Campaign",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "subject_a": {
+      "type": "string",
+      "description": "Assunto vers\u00e3o A (A/B test)"
+    },
+    "subject_b": {
+      "type": "string",
+      "description": "Assunto vers\u00e3o B (A/B test)"
+    },
+    "active_subject": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b",
+        "none"
+      ],
+      "default": "none"
+    },
+    "ab_winner": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b",
+        "pending"
+      ],
+      "default": "pending"
+    },
+    "html_body": {
+      "type": "string",
+      "description": "Conte\u00fado HTML do e-mail"
+    },
+    "preview_text": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "rascunho",
+        "agendado",
+        "enviando",
+        "enviado",
+        "pausado"
+      ],
+      "default": "rascunho"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "email_marketing",
+        "boas_vindas",
+        "remarketing",
+        "sms",
+        "push"
+      ],
+      "default": "email_marketing"
+    },
+    "scheduled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "total_sent": {
+      "type": "number",
+      "default": 0
+    },
+    "total_opened": {
+      "type": "number",
+      "default": 0
+    },
+    "total_clicked": {
+      "type": "number",
+      "default": 0
+    },
+    "total_bounced": {
+      "type": "number",
+      "default": 0
+    },
+    "target_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "target_status": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sender_name": {
+      "type": "string",
+      "default": "Marcos - Escrit\u00f3rio Jur\u00eddico"
+    },
+    "sender_email": {
+      "type": "string"
+    },
+    "click_map": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
