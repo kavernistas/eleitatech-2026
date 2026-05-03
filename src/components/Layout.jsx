@@ -14,6 +14,7 @@ const navItems = [
   { path: '/ai-agent', label: 'Agente IA', icon: MessageSquare, badge: 'NOVO' },
   { path: '/forms', label: 'Formulários', icon: FileText },
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { path: '/settings', label: 'Configurações', icon: Settings },
 ];
 
 export default function Layout() {

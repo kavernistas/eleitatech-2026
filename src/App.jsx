@@ -14,6 +14,7 @@ import Automations from '@/pages/Automations';
 import AIAgent from '@/pages/AIAgent';
 import Forms from '@/pages/Forms';
 import Analytics from '@/pages/Analytics';
+import Settings from '@/pages/Settings';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -48,6 +49,7 @@ const AuthenticatedApp = () => {
         <Route path="/ai-agent" element={<AIAgent />} />
         <Route path="/forms" element={<Forms />} />
         <Route path="/analytics" element={<Analytics />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ContactCard from '@/components/contacts/ContactCard';
 import ContactDetail from '@/components/contacts/ContactDetail';
 import ImportModal from '@/components/contacts/ImportModal';
+import NewContactModal from '@/components/contacts/NewContactModal';
 
 const statusColors = {
   novo: 'bg-muted text-muted-foreground',
@@ -29,6 +30,7 @@ export default function Contacts() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedContact, setSelectedContact] = useState(null);
   const [showImport, setShowImport] = useState(false);
+  const [showNew, setShowNew] = useState(false);
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ['contacts'],
@@ -57,7 +59,7 @@ export default function Contacts() {
             <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
               <Upload size={14} className="mr-1.5" /> Importar
             </Button>
-            <Button size="sm" className="bg-navy text-white hover:bg-navy/90">
+            <Button size="sm" className="bg-navy text-white hover:bg-navy/90" onClick={() => setShowNew(true)}>
               <Plus size={14} className="mr-1.5" /> Novo Contato
             </Button>
           </div>
@@ -142,6 +144,7 @@ export default function Contacts() {
       </div>
 
       {showImport && <ImportModal onClose={() => setShowImport(false)} />}
+      {showNew && <NewContactModal onClose={() => setShowNew(false)} />}
     </div>
   );
 }
