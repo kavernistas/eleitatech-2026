@@ -6,6 +6,22 @@ import {
   Mail, Phone, MapPin, Clock, ChevronRight,
   CheckCircle, AlertCircle, Circle, Star, Users
 } from 'lucide-react';
+
+function exportToCSV(contacts) {
+  const headers = ['Nome', 'E-mail', 'Telefone', 'Partido', 'Sigla', 'Cidade', 'Estado', 'Status', 'Tags', 'Interesse'];
+  const rows = contacts.map(c => [
+    c.name || '', c.email || '', c.phone || '',
+    c.party_name || '', c.party_acronym || '',
+    c.city || '', c.state || '',
+    c.status || '', (c.tags || []).join('; '), c.interest_area || '',
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `contatos_legaltech_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +72,9 @@ export default function Contacts() {
             <p className="text-muted-foreground text-sm">{contacts.length.toLocaleString('pt-BR')} partidos cadastrados</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered)} title="Exportar para CSV">
+              <Download size={14} className="mr-1.5" /> Exportar
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
               <Upload size={14} className="mr-1.5" /> Importar
             </Button>

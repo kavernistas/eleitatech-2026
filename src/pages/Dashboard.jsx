@@ -8,6 +8,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import KpiCard from '@/components/dashboard/KpiCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
+import Countdown2026 from '@/components/dashboard/Countdown2026';
 
 const areaData = [
   { day: 'Seg', aberturas: 312, cliques: 89 },
@@ -186,8 +187,11 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Activity */}
-        <ActivityFeed />
+        {/* Activity + Countdown */}
+        <div className="space-y-4">
+          <Countdown2026 />
+          <ActivityFeed />
+        </div>
       </div>
     </div>
   );

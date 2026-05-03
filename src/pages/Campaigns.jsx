@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CampaignEditor from '@/components/campaigns/CampaignEditor';
 import ABTestPanel from '@/components/campaigns/ABTestPanel';
+import SendCampaignModal from '@/components/campaigns/SendCampaignModal';
 
 const statusColors = {
   rascunho: 'bg-muted text-muted-foreground',
@@ -26,6 +27,7 @@ const typeLabels = {
 export default function Campaigns() {
   const [view, setView] = useState('list'); // list | editor | ab
   const [selected, setSelected] = useState(null);
+  const [sendingCampaign, setSendingCampaign] = useState(null);
   const qc = useQueryClient();
 
   const { data: campaigns = [], isLoading } = useQuery({
@@ -120,6 +122,15 @@ export default function Campaigns() {
                   <Button variant="ghost" size="sm" onClick={() => handleEdit(campaign)} title="Editar">
                     <Eye size={14} />
                   </Button>
+                  {campaign.status !== 'enviado' && (
+                    <Button
+                      size="sm"
+                      className="bg-navy text-white hover:bg-navy/90 h-8 px-3 text-xs"
+                      onClick={() => setSendingCampaign(campaign)}
+                    >
+                      <Send size={12} className="mr-1" /> Enviar
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(campaign.id)} className="text-destructive hover:text-destructive">
                     <Trash2 size={14} />
                   </Button>
@@ -129,6 +140,12 @@ export default function Campaigns() {
           ))}
         </div>
       )}
+    {sendingCampaign && (
+      <SendCampaignModal
+        campaign={sendingCampaign}
+        onClose={() => setSendingCampaign(null)}
+      />
+    )}
     </div>
   );
 }
