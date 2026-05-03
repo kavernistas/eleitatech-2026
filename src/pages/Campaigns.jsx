@@ -43,7 +43,7 @@ export default function Campaigns() {
   const handleAB = (c) => { setSelected(c); setView('ab'); };
   const handleBack = () => { setView('list'); setSelected(null); qc.invalidateQueries({ queryKey: ['campaigns'] }); };
 
-  if (view === 'editor') return <CampaignEditor campaign={selected} onBack={handleBack} />;
+  if (view === 'editor') return <div className="h-full flex flex-col overflow-hidden"><CampaignEditor campaign={selected} onBack={handleBack} /></div>;
   if (view === 'ab') return <ABTestPanel campaign={selected} onBack={handleBack} />;
 
   return (
