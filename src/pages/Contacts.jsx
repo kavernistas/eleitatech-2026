@@ -62,24 +62,6 @@ export default function Contacts() {
     queryFn: () => base44.entities.Contact.list('-created_date', 5000),
   });
 
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === filtered.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filtered.map(c => c.id)));
-    }
-  };
-
-  const selectedContacts = filtered.filter(c => selectedIds.has(c.id));
-
   // Derive unique values for filter dropdowns
   const parties = [...new Set(contacts.map(c => c.party_name).filter(Boolean))].sort();
   const states = [...new Set(contacts.map(c => c.state).filter(Boolean))].sort();
@@ -104,6 +86,24 @@ export default function Contacts() {
     const matchSituation = situationFilter === 'all' || c.situation === situationFilter;
     return matchSearch && matchStatus && matchParty && matchState && matchCity && matchSituation;
   });
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(c => c.id)));
+    }
+  };
+
+  const selectedContacts = filtered.filter(c => selectedIds.has(c.id));
 
   return (
     <div className="h-full flex flex-col">
