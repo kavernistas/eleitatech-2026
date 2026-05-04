@@ -3,8 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   Wifi, WifiOff, Loader2, QrCode, MessageSquare, User, Bot,
-  AlertTriangle, Send, ChevronRight, Search, CheckCheck, Clock,
-  PhoneCall, Zap, RefreshCw, Info
+  AlertTriangle, Send, ChevronRight, Search, CheckCheck,
+  PhoneCall, RefreshCw, Info, FileText, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +14,8 @@ import { ptBR } from 'date-fns/locale';
 
 const HANDOVER_MSG = 'Olá! Sou o Marcos Eduardo. Vou assumir o atendimento pessoalmente para finalizarmos a sua regularização. 🤝';
 
-// Fake QR Code SVG pattern
-function QrCodeDisplay({ status }) {
+// ── QR Code Display ──────────────────────────────────────────────────────────
+function QrCodeDisplay({ status, qrBase64, connectedPhone }) {
   if (status === 'online') {
     return (
       <div className="flex flex-col items-center gap-3 py-6">
@@ -23,42 +23,33 @@ function QrCodeDisplay({ status }) {
           <Wifi className="w-8 h-8 text-success" />
         </div>
         <p className="text-sm font-semibold text-success">WhatsApp Conectado</p>
-        <p className="text-xs text-muted-foreground">+55 (11) 99999-0000 · Online</p>
+        {connectedPhone && <p className="text-xs text-muted-foreground">+{connectedPhone} · Online</p>}
+      </div>
+    );
+  }
+  if (status === 'connecting' && qrBase64) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-6">
+        <img
+          src={`data:image/png;base64,${qrBase64}`}
+          alt="QR Code WhatsApp"
+          className="w-44 h-44 rounded-lg border-2 border-border"
+        />
+        <p className="text-sm font-semibold text-warning">Escaneie com o WhatsApp</p>
+        <p className="text-xs text-muted-foreground text-center max-w-[200px]">
+          WhatsApp → Aparelhos conectados → Conectar aparelho
+        </p>
       </div>
     );
   }
   if (status === 'connecting') {
     return (
       <div className="flex flex-col items-center gap-3 py-6">
-        <div className="relative">
-          {/* Simulated QR Code grid */}
-          <div className="w-40 h-40 bg-white border-2 border-border rounded-lg p-2 grid grid-cols-10 gap-px opacity-80">
-            {Array.from({ length: 100 }).map((_, i) => {
-              const corner = (r, c) => (r < 3 && c < 3) || (r < 3 && c > 6) || (r > 6 && c < 3);
-              const row = Math.floor(i / 10);
-              const col = i % 10;
-              const isCorner = corner(row, col);
-              const pseudo = (i * 7 + row * 3 + col * 5) % 100;
-              return (
-                <div
-                  key={i}
-                  className={`rounded-[1px] ${isCorner || pseudo < 45 ? 'bg-foreground' : 'bg-transparent'}`}
-                />
-              );
-            })}
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-navy animate-spin opacity-80" />
-          </div>
-        </div>
-        <p className="text-sm font-semibold text-warning">Aguardando leitura do QR Code</p>
-        <p className="text-xs text-muted-foreground text-center max-w-[200px]">
-          Abra o WhatsApp → Aparelhos conectados → Conectar aparelho
-        </p>
+        <Loader2 className="w-10 h-10 text-navy animate-spin" />
+        <p className="text-sm font-semibold text-warning">Gerando QR Code...</p>
       </div>
     );
   }
-  // disconnected
   return (
     <div className="flex flex-col items-center gap-3 py-6">
       <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
@@ -70,75 +61,232 @@ function QrCodeDisplay({ status }) {
   );
 }
 
+// ── Setup tab: configurações da instância ────────────────────────────────────
+function SetupTab({ connectionStatus, qrBase64, connectedPhone, inboxContacts, urgentContacts, contacts, onConnect, onDisconnect, isConnecting }) {
+  return (
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="max-w-2xl mx-auto space-y-4">
+        {/* Connection card */}
+        <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center gap-4">
+          <h2 className="text-sm font-semibold text-foreground self-start">Instância WhatsApp (Evolution API)</h2>
+          <QrCodeDisplay status={connectionStatus} qrBase64={qrBase64} connectedPhone={connectedPhone} />
+          <div className="flex gap-3">
+            {connectionStatus === 'disconnected' && (
+              <Button onClick={onConnect} disabled={isConnecting} className="bg-[#25D366] hover:bg-[#1fb958] text-white gap-2">
+                {isConnecting ? <Loader2 size={16} className="animate-spin" /> : <QrCode size={16} />}
+                Conectar WhatsApp
+              </Button>
+            )}
+            {connectionStatus === 'connecting' && (
+              <Button variant="outline" onClick={onDisconnect} className="gap-2">
+                <RefreshCw size={16} /> Cancelar
+              </Button>
+            )}
+            {connectionStatus === 'online' && (
+              <Button variant="outline" onClick={onDisconnect} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5">
+                <WifiOff size={16} /> Desconectar
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-card border border-border rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-navy">{inboxContacts.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Conversas Ativas</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-warning">{urgentContacts.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Aguardando Marcos</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-success">{contacts.filter(c => c.status === 'fechado').length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Fechados</p>
+          </div>
+        </div>
+
+        {/* Webhook setup instructions */}
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap size={15} className="text-amber-600" />
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">Configuração do Webhook</p>
+          </div>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
+            No painel da Evolution API, configure o webhook para receber mensagens:
+          </p>
+          <ol className="space-y-1 text-xs text-amber-700 dark:text-amber-300 list-decimal list-inside">
+            <li>Acesse seu servidor Evolution API → Instâncias → Configurações</li>
+            <li>No campo <strong>Webhook URL</strong>, insira a URL da função <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">whatsappWebhook</code></li>
+            <li>Ative o evento <strong>messages.upsert</strong></li>
+            <li>Salve e teste enviando uma mensagem para o número conectado</li>
+          </ol>
+        </div>
+
+        {/* How it works */}
+        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Info size={15} className="text-blue-600" />
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">Como funciona o fluxo</p>
+          </div>
+          <ol className="space-y-2 text-xs text-blue-700 dark:text-blue-300 list-decimal list-inside">
+            <li>Lead envia mensagem → <strong>Webhook recebe</strong> e identifica no CRM.</li>
+            <li><strong>IA responde automaticamente</strong> com orientação jurídica.</li>
+            <li>Se detectar intenção de fechar → muda para <strong>Atendimento Humano</strong> e alerta o Marcos.</li>
+            <li>Marcos clica em <strong>"Assumir Conversa"</strong> → mensagem é enviada via WhatsApp real.</li>
+            <li>Documentos recebidos são marcados com tag <strong>Documento_Recebido</strong>.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────────────────────
 export default function WhatsAppHub() {
-  const [connectionStatus, setConnectionStatus] = useState('disconnected'); // disconnected | connecting | online
-  const [activeTab, setActiveTab] = useState('inbox'); // inbox | setup
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [qrBase64, setQrBase64] = useState(null);
+  const [connectedPhone, setConnectedPhone] = useState(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [activeTab, setActiveTab] = useState('inbox');
   const [selectedContact, setSelectedContact] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [search, setSearch] = useState('');
-  const [sendingHandover, setSendingHandover] = useState(false);
+  const [sendingMsg, setSendingMsg] = useState(false);
   const bottomRef = useRef(null);
+  const pollRef = useRef(null);
   const qc = useQueryClient();
 
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts-wa'],
     queryFn: () => base44.entities.Contact.list('-updated_date', 100),
-    refetchInterval: 10000,
+    refetchInterval: 8000,
   });
 
-  // Contacts that need human attention or have conversation history
   const inboxContacts = contacts.filter(c =>
     c.status === 'atendimento_humano' || (c.whatsapp_conversation && c.whatsapp_conversation.length > 0)
   );
-
   const urgentContacts = inboxContacts.filter(c => c.status === 'atendimento_humano');
-
   const filteredInbox = inboxContacts.filter(c =>
     !search ||
     c.name?.toLowerCase().includes(search.toLowerCase()) ||
     c.party_name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [selectedContact]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [selectedContact, selectedContact?.whatsapp_conversation]);
 
-  const simulateConnect = () => {
-    setConnectionStatus('connecting');
-    setTimeout(() => setConnectionStatus('online'), 4000);
+  // Poll connection status while connecting
+  useEffect(() => {
+    if (connectionStatus === 'connecting') {
+      pollRef.current = setInterval(async () => {
+        try {
+          const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
+          const state = res.data?.instance?.state;
+          if (state === 'open') {
+            clearInterval(pollRef.current);
+            setConnectionStatus('online');
+            setQrBase64(null);
+            const phone = res.data?.instance?.profilePictureUrl ? '' : res.data?.ownerJid?.replace('@s.whatsapp.net', '');
+            if (phone) setConnectedPhone(phone);
+          } else if (state === 'close') {
+            // Still waiting — try refreshing QR
+            try {
+              const qrRes = await base44.functions.invoke('evolutionApi', { action: 'getQrCode' });
+              if (qrRes.data?.base64) setQrBase64(qrRes.data.base64);
+            } catch {}
+          }
+        } catch {}
+      }, 5000);
+    }
+    return () => clearInterval(pollRef.current);
+  }, [connectionStatus]);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      // Try to create instance (may already exist)
+      await base44.functions.invoke('evolutionApi', { action: 'createInstance' });
+    } catch {}
+    try {
+      const res = await base44.functions.invoke('evolutionApi', { action: 'getQrCode' });
+      if (res.data?.base64) {
+        setQrBase64(res.data.base64);
+        setConnectionStatus('connecting');
+      } else {
+        // Already connected
+        setConnectionStatus('online');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setIsConnecting(false);
+  };
+
+  const handleDisconnect = async () => {
+    clearInterval(pollRef.current);
+    try { await base44.functions.invoke('evolutionApi', { action: 'disconnect' }); } catch {}
+    setConnectionStatus('disconnected');
+    setQrBase64(null);
+    setConnectedPhone(null);
   };
 
   const handleAssumirConversa = async () => {
     if (!selectedContact?.id) return;
-    setSendingHandover(true);
+    setSendingMsg(true);
     const handoverMsg = { role: 'human', content: HANDOVER_MSG, ts: new Date().toISOString() };
-    const existing = selectedContact.whatsapp_conversation || [];
-    const updated = [...existing, handoverMsg];
+    const updated = [...(selectedContact.whatsapp_conversation || []), handoverMsg];
+
+    // Send real WhatsApp message if phone exists
+    if (selectedContact.phone) {
+      try {
+        await base44.functions.invoke('evolutionApi', {
+          action: 'sendMessage',
+          payload: { phone: selectedContact.phone, text: HANDOVER_MSG }
+        });
+      } catch {}
+    }
+
     await base44.entities.Contact.update(selectedContact.id, {
       status: 'contato_feito',
       whatsapp_conversation: updated,
     });
     setSelectedContact(prev => ({ ...prev, status: 'contato_feito', whatsapp_conversation: updated }));
     qc.invalidateQueries({ queryKey: ['contacts-wa'] });
-    setSendingHandover(false);
+    setSendingMsg(false);
   };
 
   const handleSendReply = async () => {
     if (!replyText.trim() || !selectedContact?.id) return;
-    const humanMsg = { role: 'human', content: replyText.trim(), ts: new Date().toISOString() };
-    const existing = selectedContact.whatsapp_conversation || [];
-    const updated = [...existing, humanMsg];
+    setSendingMsg(true);
+    const text = replyText.trim();
+    const humanMsg = { role: 'human', content: text, ts: new Date().toISOString() };
+    const updated = [...(selectedContact.whatsapp_conversation || []), humanMsg];
+
+    // Send real WhatsApp message
+    if (selectedContact.phone) {
+      try {
+        await base44.functions.invoke('evolutionApi', {
+          action: 'sendMessage',
+          payload: { phone: selectedContact.phone, text }
+        });
+      } catch {}
+    }
+
     await base44.entities.Contact.update(selectedContact.id, { whatsapp_conversation: updated });
     setSelectedContact(prev => ({ ...prev, whatsapp_conversation: updated }));
     qc.invalidateQueries({ queryKey: ['contacts-wa'] });
     setReplyText('');
+    setSendingMsg(false);
   };
 
-  const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(); } };
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendReply(); }
+  };
 
   const conversation = selectedContact?.whatsapp_conversation || [];
-
   const statusColor = { disconnected: 'text-destructive', connecting: 'text-warning', online: 'text-success' };
-  const statusLabel = { disconnected: 'Desconectado', connecting: 'Conectando...', online: 'Online' };
-  const statusDot = { disconnected: 'bg-destructive', connecting: 'bg-warning animate-pulse', online: 'bg-success' };
+  const statusLabel = { disconnected: 'Desconectado', connecting: 'Aguardando QR...', online: 'Online' };
+  const statusDot = { disconnected: 'bg-destructive', connecting: 'bg-warning animate-pulse', online: 'bg-success animate-pulse' };
 
   return (
     <div className="h-full flex flex-col animate-fade-in overflow-hidden">
@@ -150,7 +298,7 @@ export default function WhatsAppHub() {
           </div>
           <div>
             <h1 className="font-playfair font-bold text-lg text-foreground">Central WhatsApp</h1>
-            <p className="text-xs text-muted-foreground">Inbox unificada · Atendimento Humano</p>
+            <p className="text-xs text-muted-foreground">Evolution API · Inbox Unificada</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -176,63 +324,17 @@ export default function WhatsAppHub() {
 
       {/* Setup tab */}
       {activeTab === 'setup' && (
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-2xl mx-auto space-y-4">
-            {/* Connection card */}
-            <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center gap-4">
-              <h2 className="text-sm font-semibold text-foreground self-start">Instância WhatsApp</h2>
-              <QrCodeDisplay status={connectionStatus} />
-              <div className="flex gap-3">
-                {connectionStatus === 'disconnected' && (
-                  <Button onClick={simulateConnect} className="bg-[#25D366] hover:bg-[#1fb958] text-white gap-2">
-                    <QrCode size={16} /> Conectar WhatsApp
-                  </Button>
-                )}
-                {connectionStatus === 'connecting' && (
-                  <Button variant="outline" onClick={() => setConnectionStatus('disconnected')} className="gap-2">
-                    <RefreshCw size={16} /> Cancelar
-                  </Button>
-                )}
-                {connectionStatus === 'online' && (
-                  <Button variant="outline" onClick={() => setConnectionStatus('disconnected')} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5">
-                    <WifiOff size={16} /> Desconectar
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Info cards */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-card border border-border rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-navy">{inboxContacts.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">Conversas Ativas</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-warning">{urgentContacts.length}</p>
-                <p className="text-xs text-muted-foreground mt-1">Aguardando Marcos</p>
-              </div>
-              <div className="bg-card border border-border rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-success">{contacts.filter(c => c.status === 'fechado').length}</p>
-                <p className="text-xs text-muted-foreground mt-1">Fechados</p>
-              </div>
-            </div>
-
-            {/* How it works */}
-            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Info size={15} className="text-blue-600" />
-                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">Como funciona</p>
-              </div>
-              <ol className="space-y-2 text-xs text-blue-700 dark:text-blue-300 list-decimal list-inside">
-                <li>A <strong>IA faz a triagem</strong> de todos os leads automaticamente.</li>
-                <li>Quando detecta intenção de fechamento, <strong>alerta o Marcos</strong> no Dashboard.</li>
-                <li>Marcos clica em <strong>"Assumir Conversa"</strong> e envia mensagem automática de handover.</li>
-                <li>O histórico mostra em <strong>cores diferentes</strong> o que foi respondido pela IA vs pelo Marcos.</li>
-                <li>Após o fechamento, o status muda para <strong>Fechado</strong> no Kanban.</li>
-              </ol>
-            </div>
-          </div>
-        </div>
+        <SetupTab
+          connectionStatus={connectionStatus}
+          qrBase64={qrBase64}
+          connectedPhone={connectedPhone}
+          inboxContacts={inboxContacts}
+          urgentContacts={urgentContacts}
+          contacts={contacts}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+          isConnecting={isConnecting}
+        />
       )}
 
       {/* Inbox tab */}
@@ -250,7 +352,7 @@ export default function WhatsAppHub() {
             {urgentContacts.length > 0 && (
               <div className="px-3 py-2 bg-warning/5 border-b border-warning/20">
                 <p className="text-[10px] font-semibold text-warning uppercase tracking-wide flex items-center gap-1">
-                  <AlertTriangle size={10} /> Atenção imediata
+                  <AlertTriangle size={10} /> Atenção imediata ({urgentContacts.length})
                 </p>
               </div>
             )}
@@ -260,12 +362,13 @@ export default function WhatsAppHub() {
                 <div className="p-6 text-center">
                   <MessageSquare size={32} className="mx-auto text-muted-foreground/30 mb-2" />
                   <p className="text-sm text-muted-foreground">Nenhuma conversa ainda</p>
-                  <p className="text-xs text-muted-foreground mt-1">As conversas da IA aparecerão aqui</p>
+                  <p className="text-xs text-muted-foreground mt-1">Mensagens recebidas aparecerão aqui automaticamente</p>
                 </div>
               ) : filteredInbox.map(contact => {
                 const msgs = contact.whatsapp_conversation || [];
                 const lastMsg = msgs[msgs.length - 1];
                 const isUrgent = contact.status === 'atendimento_humano';
+                const hasDoc = contact.tags?.includes('Documento_Recebido');
                 return (
                   <div
                     key={contact.id}
@@ -279,17 +382,21 @@ export default function WhatsAppHub() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold truncate">{contact.name || contact.email}</p>
-                          {lastMsg?.ts && (
-                            <p className="text-[10px] text-muted-foreground flex-shrink-0 ml-2">
-                              {format(new Date(lastMsg.ts), 'HH:mm', { locale: ptBR })}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                            {hasDoc && <FileText size={10} className="text-blue-500" />}
+                            {lastMsg?.ts && (
+                              <p className="text-[10px] text-muted-foreground">
+                                {format(new Date(lastMsg.ts), 'HH:mm', { locale: ptBR })}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground truncate">{contact.party_name} · {contact.city}</p>
                         {lastMsg && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5 flex items-center gap-1">
-                            {lastMsg.role === 'human' ? <User size={9} className="text-navy" /> : <Bot size={9} />}
-                            {lastMsg.content?.substring(0, 50)}...
+                            {lastMsg.role === 'human' ? <User size={9} className="text-[#25D366]" /> :
+                              lastMsg.role === 'assistant' ? <Bot size={9} /> : <User size={9} className="text-navy" />}
+                            {lastMsg.content?.substring(0, 50)}
                           </p>
                         )}
                       </div>
@@ -314,7 +421,6 @@ export default function WhatsAppHub() {
             </div>
           ) : (
             <div className="flex-1 flex overflow-hidden">
-              {/* Messages */}
               <div className="flex-1 flex flex-col">
                 {/* Chat header */}
                 <div className="h-14 border-b border-border bg-card flex items-center px-4 gap-3 flex-shrink-0">
@@ -325,17 +431,27 @@ export default function WhatsAppHub() {
                     {(selectedContact.name || '?').substring(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold">{selectedContact.name || selectedContact.email}</p>
-                    <p className="text-xs text-muted-foreground">{selectedContact.party_name} · {selectedContact.city}, {selectedContact.state}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">{selectedContact.name || selectedContact.email}</p>
+                      {selectedContact.tags?.includes('Documento_Recebido') && (
+                        <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-300 px-1.5 py-0">
+                          <FileText size={9} className="mr-1" /> Doc recebido
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedContact.party_name} · {selectedContact.city}, {selectedContact.state}
+                      {selectedContact.phone && ` · ${selectedContact.phone}`}
+                    </p>
                   </div>
                   {selectedContact.status === 'atendimento_humano' && (
                     <Button
                       onClick={handleAssumirConversa}
-                      disabled={sendingHandover}
+                      disabled={sendingMsg}
                       size="sm"
                       className="bg-[#25D366] hover:bg-[#1fb958] text-white gap-2 text-xs"
                     >
-                      {sendingHandover ? <Loader2 size={13} className="animate-spin" /> : <PhoneCall size={13} />}
+                      {sendingMsg ? <Loader2 size={13} className="animate-spin" /> : <PhoneCall size={13} />}
                       Assumir Conversa
                     </Button>
                   )}
@@ -346,7 +462,7 @@ export default function WhatsAppHub() {
                   )}
                 </div>
 
-                {/* Messages list */}
+                {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f0f2f5] dark:bg-background/50">
                   {conversation.length === 0 && (
                     <div className="text-center py-8">
@@ -369,28 +485,25 @@ export default function WhatsAppHub() {
                     }
 
                     return (
-                      <div key={i} className={`flex ${isUser ? 'justify-end' : isHuman ? 'justify-end' : 'justify-start'}`}>
+                      <div key={i} className={`flex ${(isUser || isHuman) ? 'justify-end' : 'justify-start'}`}>
                         <div className={`flex gap-2 max-w-[75%] ${(isUser || isHuman) ? 'flex-row-reverse' : ''}`}>
-                          {/* Avatar */}
                           <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                            isHuman ? 'bg-[#25D366]' : isUser ? 'bg-navy/20' : 'gradient-navy'
+                            isHuman ? 'bg-[#25D366]' : isUser ? 'bg-navy' : 'bg-muted border border-border'
                           }`}>
                             {isHuman ? <User size={13} className="text-white" /> :
-                              isUser ? <User size={13} className="text-navy" /> :
-                              <Bot size={13} className="text-white" />}
+                              isUser ? <User size={13} className="text-white" /> :
+                              <Bot size={13} className="text-foreground" />}
                           </div>
-                          {/* Bubble */}
                           <div>
-                            {/* Sender label */}
                             <p className={`text-[10px] mb-0.5 ${(isUser || isHuman) ? 'text-right' : 'text-left'} text-muted-foreground`}>
                               {isHuman ? '👤 Marcos (humano)' : isUser ? '🏛️ Lead' : '🤖 IA Jurídica'}
                             </p>
                             <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-sm ${
                               isHuman
-                                ? 'bg-[#25D366] text-white rounded-tr-sm'   // green - human
+                                ? 'bg-[#25D366] text-white rounded-tr-sm'
                                 : isUser
-                                ? 'bg-navy text-white rounded-tr-sm'          // navy - lead
-                                : 'bg-white dark:bg-card border border-border text-foreground rounded-tl-sm'  // white - AI
+                                ? 'bg-navy text-white rounded-tr-sm'
+                                : 'bg-white dark:bg-card border border-border text-foreground rounded-tl-sm'
                             }`}>
                               {msg.content}
                             </div>
@@ -413,23 +526,27 @@ export default function WhatsAppHub() {
                     value={replyText}
                     onChange={e => setReplyText(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Responder como Marcos..."
+                    placeholder={selectedContact.phone ? `Responder para ${selectedContact.phone}...` : 'Responder como Marcos...'}
                     className="flex-1 h-10 text-sm"
+                    disabled={sendingMsg}
                   />
-                  <Button onClick={handleSendReply} disabled={!replyText.trim()} className="bg-[#25D366] hover:bg-[#1fb958] text-white h-10 px-4">
-                    <Send size={15} />
+                  <Button onClick={handleSendReply} disabled={!replyText.trim() || sendingMsg} className="bg-[#25D366] hover:bg-[#1fb958] text-white h-10 px-4">
+                    {sendingMsg ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                   </Button>
                 </div>
 
                 {/* Legend */}
-                <div className="px-4 pb-2 bg-card flex items-center gap-4 flex-wrap border-t border-border">
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white border border-border inline-block" />IA Jurídica</span>
+                <div className="px-4 pb-2 pt-1 bg-card flex items-center gap-4 flex-wrap border-t border-border">
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-muted border border-border inline-block" />IA Jurídica</span>
                   <span className="text-[10px] text-muted-foreground flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-navy inline-block" />Lead/Partido</span>
                   <span className="text-[10px] text-muted-foreground flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#25D366] inline-block" />Marcos (humano)</span>
+                  {!selectedContact.phone && (
+                    <span className="text-[10px] text-warning ml-auto">⚠ Sem telefone cadastrado — mensagens não serão enviadas via WhatsApp</span>
+                  )}
                 </div>
               </div>
 
-              {/* Contact sidebar */}
+              {/* CRM Sidebar */}
               <div className="hidden xl:flex flex-col w-64 border-l border-border bg-card/30 overflow-y-auto">
                 <div className="p-4 border-b border-border">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dados do CRM</p>
@@ -437,24 +554,26 @@ export default function WhatsAppHub() {
                 <div className="p-4 space-y-3">
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Partido</p>
-                    <p className="text-sm font-semibold text-foreground">{selectedContact.party_name || '—'}</p>
+                    <p className="text-sm font-semibold">{selectedContact.party_name || '—'}</p>
                     {selectedContact.party_acronym && <p className="text-xs text-muted-foreground">{selectedContact.party_acronym}</p>}
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Município</p>
-                    <p className="text-sm text-foreground">{selectedContact.city}, {selectedContact.state}</p>
+                    <p className="text-sm">{selectedContact.city}, {selectedContact.state}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Contato</p>
-                    <p className="text-sm text-foreground">{selectedContact.email}</p>
-                    {selectedContact.phone && <p className="text-xs text-muted-foreground">{selectedContact.phone}</p>}
+                    <p className="text-sm">{selectedContact.email}</p>
+                    {selectedContact.phone && <p className="text-xs text-muted-foreground font-mono">{selectedContact.phone}</p>}
                   </div>
                   {selectedContact.tags?.length > 0 && (
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Pendências</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Tags</p>
                       <div className="flex flex-wrap gap-1">
                         {selectedContact.tags.map(tag => (
-                          <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-warning/10 text-warning border border-warning/20 rounded font-medium">{tag}</span>
+                          <span key={tag} className={`text-[10px] px-1.5 py-0.5 rounded font-medium border ${
+                            tag === 'Documento_Recebido' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-warning/10 text-warning border-warning/20'
+                          }`}>{tag}</span>
                         ))}
                       </div>
                     </div>
@@ -462,18 +581,17 @@ export default function WhatsAppHub() {
                   {selectedContact.ai_summary && (
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Resumo IA</p>
-                      <p className="text-xs text-foreground leading-relaxed bg-muted rounded-lg p-2">{selectedContact.ai_summary}</p>
+                      <p className="text-xs leading-relaxed bg-muted rounded-lg p-2">{selectedContact.ai_summary}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Histórico de Envios</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">E-mails</p>
                     <div className="space-y-1">
-                      <div className="flex justify-between text-xs"><span className="text-muted-foreground">E-mails enviados</span><span className="font-medium">{selectedContact.emails_sent_count || 0}</span></div>
+                      <div className="flex justify-between text-xs"><span className="text-muted-foreground">Enviados</span><span className="font-medium">{selectedContact.emails_sent_count || 0}</span></div>
                       <div className="flex justify-between text-xs"><span className="text-muted-foreground">Abertos</span><span className="font-medium text-success">{selectedContact.emails_opened_count || 0}</span></div>
-                      <div className="flex justify-between text-xs"><span className="text-muted-foreground">Cliques</span><span className="font-medium text-navy">{selectedContact.clicks_count || 0}</span></div>
                     </div>
                   </div>
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
                       selectedContact.status === 'atendimento_humano' ? 'bg-warning/10 text-warning' :
                       selectedContact.status === 'fechado' ? 'bg-success/10 text-success' :
