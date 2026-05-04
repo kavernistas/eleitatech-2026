@@ -156,10 +156,60 @@ export default function Settings() {
           {activeTab === 'integracoes' && (
             <>
               <h2 className="text-base font-semibold text-foreground">Integrações Externas</h2>
-              <p className="text-sm text-muted-foreground mb-4">Conecte fontes externas de leads ao CRM.</p>
+              <p className="text-sm text-muted-foreground mb-4">Conecte fontes externas de leads ao CRM e configure APIs.</p>
               <GoogleSheetsSync />
               <div className="border-t border-border pt-5 mt-5">
                 <SupabaseStatus />
+              </div>
+
+              {/* API OpenAI */}
+              <div className="border-t border-border pt-5 mt-5">
+                <h3 className="font-semibold text-foreground flex items-center gap-2 mb-1">
+                  <Key size={15} className="text-purple-600" />
+                  API OpenAI (Inteligência Artificial)
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">Chave utilizada pelo agente de IA para geração de respostas automáticas.</p>
+                <div className="bg-muted rounded-lg p-4 text-xs text-muted-foreground space-y-2">
+                  <p>Defina a seguinte variável de ambiente no painel de deploy:</p>
+                  <code className="block bg-navy/10 text-navy font-mono px-3 py-1.5 rounded">OPENAI_API_KEY</code>
+                  <p className="text-[11px]">Obtenha sua chave em: <span className="text-primary font-medium">platform.openai.com/api-keys</span></p>
+                </div>
+              </div>
+
+              {/* API WhatsApp / Evolution */}
+              <div className="border-t border-border pt-5 mt-5">
+                <h3 className="font-semibold text-foreground flex items-center gap-2 mb-1">
+                  <Phone size={15} className="text-green-600" />
+                  API Evolution (WhatsApp)
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">Credenciais para envio e recebimento de mensagens via WhatsApp.</p>
+                <div className="bg-muted rounded-lg p-4 text-xs text-muted-foreground space-y-2">
+                  <p>Defina as seguintes variáveis de ambiente no painel de deploy:</p>
+                  <div className="space-y-1.5">
+                    <code className="block bg-green-600/10 text-green-700 font-mono px-3 py-1.5 rounded">EVOLUTION_API_URL</code>
+                    <code className="block bg-green-600/10 text-green-700 font-mono px-3 py-1.5 rounded">EVOLUTION_API_KEY</code>
+                    <code className="block bg-green-600/10 text-green-700 font-mono px-3 py-1.5 rounded">EVOLUTION_INSTANCE_NAME</code>
+                  </div>
+                  <p className="text-[11px]">Configure sua instância em: <span className="text-primary font-medium">app.evolution-api.com</span></p>
+                </div>
+              </div>
+
+              {/* API Disparo de E-mail */}
+              <div className="border-t border-border pt-5 mt-5">
+                <h3 className="font-semibold text-foreground flex items-center gap-2 mb-1">
+                  <Mail size={15} className="text-blue-600" />
+                  API de Disparo de E-mails
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">Credenciais para disparo de campanhas e e-mails transacionais aos partidos.</p>
+                <div className="bg-muted rounded-lg p-4 text-xs text-muted-foreground space-y-2">
+                  <p>Defina as seguintes variáveis de ambiente no painel de deploy:</p>
+                  <div className="space-y-1.5">
+                    <code className="block bg-blue-600/10 text-blue-700 font-mono px-3 py-1.5 rounded">RESEND_API_KEY</code>
+                    <code className="block bg-blue-600/10 text-blue-700 font-mono px-3 py-1.5 rounded">EMAIL_FROM_ADDRESS</code>
+                    <code className="block bg-blue-600/10 text-blue-700 font-mono px-3 py-1.5 rounded">EMAIL_FROM_NAME</code>
+                  </div>
+                  <p className="text-[11px]">Obtenha sua chave em: <span className="text-primary font-medium">resend.com/api-keys</span></p>
+                </div>
               </div>
             </>
           )}
