@@ -14,8 +14,8 @@ function buildHtml(contact, tpl) {
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 <tr><td style="background:linear-gradient(135deg,#1a3a6b,#2d5fa6);padding:36px 40px;text-align:center;">
-  <h1 style="margin:0;color:#f0c040;font-size:22px;font-weight:700;">Escritório Jurídico</h1>
-  <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Dr. Marcos Eduardo · Direito Eleitoral e Partidário</p>
+  <h1 style="margin:0;color:#f0c040;font-size:22px;font-weight:700;">Marcos Eduardo</h1>
+  <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Contador Partidário e Eleitoral · CRC/SP 151562/O-0</p>
 </td></tr>
 <tr><td style="padding:40px;">
   <p style="margin:0 0 8px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${tpl.headline}</p>
@@ -41,7 +41,8 @@ function buildHtml(contact, tpl) {
   </p>
 </td></tr>
 <tr><td style="background:#f8fafc;border-top:1px solid #e8ecf0;padding:20px 40px;text-align:center;">
-  <p style="margin:0;font-size:12px;color:#aaa;">Dr. Marcos Eduardo · Direito Eleitoral · OAB/SP</p>
+  <p style="margin:0;font-size:12px;color:#aaa;">Marcos Eduardo · Contador Partidário e Eleitoral · CRC/SP 151562/O-0</p>
+  <p style="margin:4px 0 0;font-size:12px;color:#bbb;">Rua Suíça, 595 - Parque das Nações · Santo André - SP · CEP 09210-000</p>
   <p style="margin:4px 0 0;font-size:11px;color:#ccc;">Você recebeu este e-mail pois seu diretório consta em nossa base de prospecção para 2026.</p>
 </td></tr>
 </table>
@@ -97,7 +98,7 @@ Deno.serve(async (req) => {
       to: contact.email,
       subject,
       body: buildHtml(contact, tpl),
-      from_name: 'Marcos Eduardo - Escritório Jurídico',
+      from_name: 'Marcos Eduardo - Contador Partidário e Eleitoral',
     });
 
     if (contact.id) {
