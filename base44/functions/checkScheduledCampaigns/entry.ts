@@ -3,14 +3,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
 
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Fetch all scheduled campaigns
-    const campaigns = await base44.entities.Campaign.filter({ status: 'agendado' }, '-scheduled_at', 50);
+    // Fetch all scheduled campaigns using service role (called by scheduler)
+    const campaigns = await base44.asServiceRole.entities.Campaign.filter({ status: 'agendado' }, '-scheduled_at', 50);
 
     const now = new Date();
     const triggered = [];
@@ -22,7 +17,7 @@ Deno.serve(async (req) => {
 
       // If the scheduled time has passed, mark as sending → enviado
       if (scheduledTime <= now) {
-        await base44.entities.Campaign.update(campaign.id, {
+        await base44.asServiceRole.entities.Campaign.update(campaign.id, {
           status: 'enviado',
           sent_at: now.toISOString(),
           total_sent: campaign.total_sent || 0,

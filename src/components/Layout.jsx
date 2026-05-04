@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Mail, Zap, MessageSquare, FileText,
-  BarChart3, Settings, Menu, X, Scale, Bell, ChevronRight, Phone
+  BarChart3, Settings, Menu, Scale, Bell, ChevronRight, Phone, LogOut
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/lib/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/contacts', label: 'Contatos', icon: Users, badge: '4.264' },
+  { path: '/contacts', label: 'Contatos', icon: Users },
   { path: '/campaigns', label: 'Campanhas', icon: Mail },
   { path: '/automations', label: 'Automações', icon: Zap },
   { path: '/ai-agent', label: 'Agente IA', icon: MessageSquare, badge: 'NOVO' },
@@ -21,6 +24,15 @@ const navItems = [
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { user, logout } = useAuth();
+
+  const { data: contactCount = 0 } = useQuery({
+    queryKey: ['contacts-total'],
+    queryFn: async () => {
+      const all = await base44.entities.Contact.list('-created_date', 5000);
+      return all.length;
+    },
+  });
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -74,9 +86,16 @@ export default function Layout() {
                 <span className="text-sm font-medium flex-1">{item.label}</span>
                 {item.badge && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
-                    item.badge === 'NOVO' ? 'bg-gold/20 text-gold' : 'bg-white/10 text-white/50'
+                    item.badge === 'NOVO' ? 'bg-gold/20 text-gold' :
+                    item.badge === 'LIVE' ? 'bg-green-500/20 text-green-400' :
+                    'bg-white/10 text-white/50'
                   }`}>
                     {item.badge}
+                  </span>
+                )}
+                {item.path === '/contacts' && contactCount > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-white/10 text-white/50">
+                    {contactCount.toLocaleString('pt-BR')}
                   </span>
                 )}
                 {active && <ChevronRight className="w-3 h-3 text-gold" />}
@@ -88,13 +107,22 @@ export default function Layout() {
         {/* Bottom user info */}
         <div className="px-4 py-4 border-t border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 gradient-gold rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">M</span>
+            <div className="w-8 h-8 gradient-gold rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-xs font-bold">
+                {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-semibold truncate">Marcos</p>
-              <p className="text-white/40 text-[10px]">Administrador</p>
+              <p className="text-white text-xs font-semibold truncate">{user?.full_name || 'Usuário'}</p>
+              <p className="text-white/40 text-[10px] capitalize">{user?.role === 'admin' ? 'Administrador' : 'Usuário'}</p>
             </div>
+            <button
+              onClick={() => logout()}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+              title="Sair"
+            >
+              <LogOut size={14} className="text-white/40 hover:text-white/70" />
+            </button>
           </div>
         </div>
       </aside>
