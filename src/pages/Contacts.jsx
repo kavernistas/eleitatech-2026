@@ -44,22 +44,43 @@ const statusColors = {
 export default function Contacts() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [partyFilter, setPartyFilter] = useState('all');
+  const [stateFilter, setStateFilter] = useState('all');
+  const [cityFilter, setCityFilter] = useState('');
+  const [situationFilter, setSituationFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
   const [showImport, setShowImport] = useState(false);
   const [showNew, setShowNew] = useState(false);
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ['contacts'],
-    queryFn: () => base44.entities.Contact.list('-created_date', 200),
+    queryFn: () => base44.entities.Contact.list('-created_date', 5000),
   });
 
+  // Derive unique values for filter dropdowns
+  const parties = [...new Set(contacts.map(c => c.party_name).filter(Boolean))].sort();
+  const states = [...new Set(contacts.map(c => c.state).filter(Boolean))].sort();
+  const situations = [...new Set(contacts.map(c => c.situation).filter(Boolean))].sort();
+
+  const activeFilterCount = [
+    partyFilter !== 'all', stateFilter !== 'all', cityFilter, situationFilter !== 'all', statusFilter !== 'all'
+  ].filter(Boolean).length;
+
   const filtered = contacts.filter(c => {
+    const q = search.toLowerCase();
     const matchSearch = !search ||
-      c.name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.party_name?.toLowerCase().includes(search.toLowerCase());
+      c.name?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q) ||
+      c.party_name?.toLowerCase().includes(q) ||
+      c.city?.toLowerCase().includes(q) ||
+      c.cnpj?.includes(search);
     const matchStatus = statusFilter === 'all' || c.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchParty = partyFilter === 'all' || c.party_name === partyFilter;
+    const matchState = stateFilter === 'all' || c.state === stateFilter;
+    const matchCity = !cityFilter || c.city?.toLowerCase().includes(cityFilter.toLowerCase());
+    const matchSituation = situationFilter === 'all' || c.situation === situationFilter;
+    return matchSearch && matchStatus && matchParty && matchState && matchCity && matchSituation;
   });
 
   return (
@@ -83,32 +104,99 @@ export default function Contacts() {
             </Button>
           </div>
         </div>
-        <div className="flex gap-3">
-          <div className="relative flex-1 max-w-sm">
+        {/* Search + filter toggle row */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
             <Input
-              placeholder="Buscar por nome, e-mail ou partido..."
+              placeholder="Buscar por nome, e-mail, partido, cidade, CNPJ..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9 h-9 text-sm"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44 h-9 text-sm">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="novo">Novo</SelectItem>
-              <SelectItem value="contato_feito">Contato Feito</SelectItem>
-              <SelectItem value="interessado">Interessado</SelectItem>
-              <SelectItem value="proposta_enviada">Proposta Enviada</SelectItem>
-              <SelectItem value="fechado">Fechado</SelectItem>
-              <SelectItem value="atendimento_humano">Atendimento Humano</SelectItem>
-              <SelectItem value="inativo">Inativo</SelectItem>
-            </SelectContent>
-          </Select>
+          <Button
+            variant="outline" size="sm"
+            className={`h-9 gap-1.5 ${showFilters ? 'border-navy text-navy' : ''}`}
+            onClick={() => setShowFilters(v => !v)}
+          >
+            <Filter size={14} />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="bg-navy text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{activeFilterCount}</span>
+            )}
+          </Button>
         </div>
+
+        {/* Advanced filters panel */}
+        {showFilters && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Select value={partyFilter} onValueChange={setPartyFilter}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue placeholder="Partido" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os partidos</SelectItem>
+                {parties.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={stateFilter} onValueChange={setStateFilter}>
+              <SelectTrigger className="w-28 h-8 text-xs">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os UF</SelectItem>
+                {states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Input
+              placeholder="Cidade..."
+              value={cityFilter}
+              onChange={e => setCityFilter(e.target.value)}
+              className="w-36 h-8 text-xs"
+            />
+
+            <Select value={situationFilter} onValueChange={setSituationFilter}>
+              <SelectTrigger className="w-36 h-8 text-xs">
+                <SelectValue placeholder="Situação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas situações</SelectItem>
+                {situations.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-44 h-8 text-xs">
+                <SelectValue placeholder="Status CRM" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status CRM</SelectItem>
+                <SelectItem value="novo">Novo</SelectItem>
+                <SelectItem value="contato_feito">Contato Feito</SelectItem>
+                <SelectItem value="interessado">Interessado</SelectItem>
+                <SelectItem value="proposta_enviada">Proposta Enviada</SelectItem>
+                <SelectItem value="fechado">Fechado</SelectItem>
+                <SelectItem value="atendimento_humano">Atendimento Humano</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {activeFilterCount > 0 && (
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground"
+                onClick={() => { setPartyFilter('all'); setStateFilter('all'); setCityFilter(''); setSituationFilter('all'); setStatusFilter('all'); }}>
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Results count */}
+        <p className="text-xs text-muted-foreground">
+          {filtered.length.toLocaleString('pt-BR')} de {contacts.length.toLocaleString('pt-BR')} contatos
+        </p>
       </div>
 
       {/* Content */}
