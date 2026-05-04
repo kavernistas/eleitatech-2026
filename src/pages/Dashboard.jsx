@@ -9,6 +9,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import KpiCard from '@/components/dashboard/KpiCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import Countdown2026 from '@/components/dashboard/Countdown2026';
+import UrgentActions from '@/components/dashboard/UrgentActions';
 
 const areaData = [
   { day: 'Seg', aberturas: 312, cliques: 89 },
@@ -187,9 +188,10 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Activity + Countdown */}
+        {/* Activity + Countdown + Urgent */}
         <div className="space-y-4">
           <Countdown2026 />
+          <UrgentActions />
           <ActivityFeed />
         </div>
       </div>

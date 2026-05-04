@@ -94,6 +94,21 @@ export default function AIAgent() {
 
   const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
+  const QUICK_REPLIES = [
+    'Quais são os prazos para regularização do CNPJ?',
+    'Como está a situação das contas 2025?',
+    'Preciso falar com um especialista humano',
+    'Quais documentos são necessários?',
+    'Qual o valor do serviço?',
+  ];
+
+  const handleAssumirAtendimento = async () => {
+    if (!selectedContact?.id) return;
+    await base44.entities.Contact.update(selectedContact.id, { status: 'contato_feito' });
+    qc.invalidateQueries({ queryKey: ['contacts-ai'] });
+    setSelectedContact(prev => ({ ...prev, status: 'contato_feito' }));
+  };
+
   return (
     <div className="h-full flex animate-fade-in overflow-hidden">
       {/* Contact list */}
@@ -161,9 +176,17 @@ export default function AIAgent() {
             </p>
           </div>
           {selectedContact?.status === 'atendimento_humano' && (
-            <span className="flex items-center gap-1.5 text-xs text-warning bg-warning/10 px-2.5 py-1 rounded-full font-medium">
-              <AlertTriangle size={11} /> Requer Humano
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-xs text-warning bg-warning/10 px-2.5 py-1 rounded-full font-medium">
+                <AlertTriangle size={11} /> Requer Humano
+              </span>
+              <button
+                onClick={handleAssumirAtendimento}
+                className="text-xs bg-navy text-white px-3 py-1 rounded-full font-medium hover:bg-navy/90 transition-colors"
+              >
+                Assumir
+              </button>
+            </div>
           )}
         </div>
 
@@ -209,8 +232,22 @@ export default function AIAgent() {
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-border bg-card">
-          <div className="flex gap-2">
+        <div className="border-t border-border bg-card">
+          {/* Quick replies */}
+          {!loading && messages.length <= 2 && (
+            <div className="px-4 pt-3 flex flex-wrap gap-1.5">
+              {QUICK_REPLIES.map(q => (
+                <button
+                  key={q}
+                  onClick={() => { setMessage(q); }}
+                  className="text-[11px] px-2.5 py-1 bg-muted hover:bg-navy hover:text-white border border-border rounded-full text-muted-foreground transition-colors"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 p-4">
             <Input
               value={message}
               onChange={e => setMessage(e.target.value)}
@@ -223,7 +260,7 @@ export default function AIAgent() {
               <Send size={15} />
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2 text-center">
+          <p className="text-[10px] text-muted-foreground pb-3 text-center">
             IA treinada em legislação eleitoral brasileira · Transição automática para Marcos quando necessário
           </p>
         </div>

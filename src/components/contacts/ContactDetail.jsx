@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { X, Mail, Phone, MapPin, Tag, MessageSquare, Edit2, Save, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, Mail, Phone, MapPin, Tag, MessageSquare, Edit2, Save, Plus, Wand2, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +14,9 @@ const tagOptions = ['Urgente', 'Pendência 2024', 'CNPJ', 'Contas 2025', 'Respon
 export default function ContactDetail({ contact, statusColors, onClose }) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(contact.notes || '');
+  const [generatingAi, setGeneratingAi] = useState(false);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.Contact.update(contact.id, data),
@@ -26,6 +29,24 @@ export default function ContactDetail({ contact, statusColors, onClose }) {
     const tags = contact.tags || [];
     const next = tags.includes(tag) ? tags.filter(t => t !== tag) : [...tags, tag];
     updateMutation.mutate({ tags: next });
+  };
+
+  const handleGenerateAiSummary = async () => {
+    setGeneratingAi(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Gere um resumo executivo conciso (máx 3 linhas) sobre este contato para uso interno de um escritório jurídico eleitoral:
+Nome: ${contact.name || 'N/A'}
+Partido: ${contact.party_name || 'N/A'} (${contact.party_acronym || 'N/A'})
+Cidade/Estado: ${contact.city || 'N/A'} / ${contact.state || 'N/A'}
+Status: ${contact.status || 'novo'}
+Tags: ${(contact.tags || []).join(', ') || 'nenhuma'}
+Interesse: ${contact.interest_area || 'nenhum'}
+E-mails enviados: ${contact.emails_sent_count || 0} | Abertos: ${contact.emails_opened_count || 0} | Cliques: ${contact.clicks_count || 0}
+Notas: ${contact.notes || 'nenhuma'}
+Foque em: potencial de fechamento, urgências e próxima ação recomendada.`,
+    });
+    await updateMutation.mutateAsync({ ai_summary: result });
+    setGeneratingAi(false);
   };
 
   const stats = [
@@ -142,12 +163,41 @@ export default function ContactDetail({ contact, statusColors, onClose }) {
         )}
       </div>
 
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 text-xs border-navy/30 text-navy hover:bg-navy hover:text-white"
+          onClick={handleGenerateAiSummary}
+          disabled={generatingAi}
+        >
+          {generatingAi
+            ? <><span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin mr-1.5" />Analisando...</>
+            : <><Wand2 size={11} className="mr-1.5" />Gerar Resumo IA</>
+          }
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 text-xs"
+          onClick={() => { onClose?.(); navigate('/ai-agent'); }}
+        >
+          <Bot size={11} className="mr-1.5" /> Abrir no Agente
+        </Button>
+      </div>
+
       {/* AI Summary */}
       {contact.ai_summary && (
         <div className="bg-navy/5 border border-navy/20 rounded-xl p-4">
-          <h3 className="text-xs font-semibold text-navy uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <MessageSquare size={11} /> Resumo da IA
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-navy uppercase tracking-wider flex items-center gap-1.5">
+              <MessageSquare size={11} /> Resumo da IA
+            </h3>
+            <button onClick={handleGenerateAiSummary} disabled={generatingAi} className="text-[10px] text-navy/60 hover:text-navy">
+              {generatingAi ? '...' : '↻ Atualizar'}
+            </button>
+          </div>
           <p className="text-sm text-foreground/80">{contact.ai_summary}</p>
         </div>
       )}
