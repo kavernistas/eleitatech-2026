@@ -16,17 +16,53 @@
     },
     "party_name": {
       "type": "string",
-      "description": "Nome do partido"
+      "description": "Nome do partido ou federa\u00e7\u00e3o"
     },
     "party_acronym": {
       "type": "string",
       "description": "Sigla do partido"
+    },
+    "organ_type": {
+      "type": "string",
+      "description": "Tipo do \u00d3rg\u00e3o (ex: Diret\u00f3rio Municipal, Comiss\u00e3o Provis\u00f3ria)"
+    },
+    "cnpj": {
+      "type": "string",
+      "description": "CNPJ do diret\u00f3rio partid\u00e1rio"
+    },
+    "situation": {
+      "type": "string",
+      "description": "Situa\u00e7\u00e3o do \u00f3rg\u00e3o (ex: Ativo, Cancelado)"
+    },
+    "role": {
+      "type": "string",
+      "description": "Cargo do representante"
+    },
+    "address": {
+      "type": "string",
+      "description": "Endere\u00e7o completo"
+    },
+    "neighborhood": {
+      "type": "string",
+      "description": "Bairro"
     },
     "city": {
       "type": "string"
     },
     "state": {
       "type": "string"
+    },
+    "zip_code": {
+      "type": "string",
+      "description": "CEP"
+    },
+    "validity_start": {
+      "type": "string",
+      "description": "Data In\u00edcio de Vig\u00eancia"
+    },
+    "validity_end": {
+      "type": "string",
+      "description": "Data Fim de Vig\u00eancia"
     },
     "status": {
       "type": "string",

@@ -45,13 +45,22 @@ export default function ImportModal({ onClose }) {
             items: {
               type: "object",
               properties: {
-                name: { type: "string" },
-                email: { type: "string" },
-                party_name: { type: "string" },
-                party_acronym: { type: "string" },
-                phone: { type: "string" },
-                city: { type: "string" },
-                state: { type: "string" }
+                party_name:     { type: "string", description: "Partido/Federação" },
+                party_acronym:  { type: "string", description: "Sigla do partido extraída do nome" },
+                organ_type:     { type: "string", description: "Tipo do Órgão" },
+                validity_start: { type: "string", description: "Data Início Vigência" },
+                validity_end:   { type: "string", description: "Data Fim Vigência" },
+                situation:      { type: "string", description: "Situação" },
+                name:           { type: "string", description: "Nome do representante" },
+                role:           { type: "string", description: "Cargo" },
+                address:        { type: "string", description: "Endereço" },
+                neighborhood:   { type: "string", description: "Bairro" },
+                city:           { type: "string", description: "Município" },
+                state:          { type: "string", description: "UF" },
+                zip_code:       { type: "string", description: "CEP" },
+                phone:          { type: "string", description: "Telefone" },
+                email:          { type: "string", description: "E-mail" },
+                cnpj:           { type: "string", description: "CNPJ" }
               }
             }
           }
