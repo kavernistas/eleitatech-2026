@@ -1,33 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-function buildMimeMessage(to, toName, subject, htmlBody) {
-  const boundary = `b_${Date.now()}`;
-  const encSubject = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
-  const fromLine = `Marcos Eduardo - Escritorio Juridico <me>`;
-  const toLine = toName ? `${toName} <${to}>` : to;
-  const encodedHtml = btoa(unescape(encodeURIComponent(htmlBody)));
-
-  const raw = [
-    `From: ${fromLine}`,
-    `To: ${toLine}`,
-    `Subject: ${encSubject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    ``,
-    `--${boundary}`,
-    `Content-Type: text/html; charset=UTF-8`,
-    `Content-Transfer-Encoding: base64`,
-    ``,
-    encodedHtml,
-    `--${boundary}--`,
-  ].join('\r\n');
-
-  return btoa(unescape(encodeURIComponent(raw)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
 function buildHtml(contact) {
-  const name = contact.name || contact.party_name || 'Responsavel';
+  const name = contact.name || contact.party_name || 'Responsável';
   const party = contact.party_acronym || contact.party_name || '';
   const location = [contact.city, contact.state].filter(Boolean).join('/');
   const greeting = [party, location].filter(Boolean).join(' de ');
@@ -50,17 +24,17 @@ function buildHtml(contact) {
   </p>
   <p style="margin:0 0 20px;font-size:15px;color:#444;line-height:1.7;">Nosso escritório é especializado em:</p>
   <div style="background:#f0f5ff;border-left:4px solid #2d5fa6;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px;">
-    <strong style="color:#1a3a6b;font-size:14px;">Regularização de CNPJ Partidário</strong><br>
+    <strong style="color:#1a3a6b;font-size:14px;">📋 Regularização de CNPJ Partidário</strong><br>
     <span style="color:#666;font-size:13px;">Pendências 2024 · Baixa de débitos · Adequação cadastral</span>
   </div>
   <div style="background:#f0f5ff;border-left:4px solid #f0c040;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:24px;">
-    <strong style="color:#1a3a6b;font-size:14px;">Prestação de Contas 2025 (TSE/TRE)</strong><br>
+    <strong style="color:#1a3a6b;font-size:14px;">📊 Prestação de Contas 2025 (TSE/TRE)</strong><br>
     <span style="color:#666;font-size:13px;">Relatórios · Adequação · Recursos administrativos</span>
   </div>
   <table width="100%"><tr><td align="center" style="padding:8px 0 24px;">
     <a href="https://wa.me/5511999990000?text=Ol%C3%A1%2C+vim+pelo+e-mail+sobre+regulariza%C3%A7%C3%A3o+partid%C3%A1ria"
        style="display:inline-block;background:#25D366;color:#fff;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;">
-      Solicitar Diagnóstico Gratuito
+      💬 Solicitar Diagnóstico Gratuito
     </a>
   </td></tr></table>
   <p style="margin:0;font-size:13px;color:#888;line-height:1.6;">
@@ -88,33 +62,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No email provided' }, { status: 400 });
     }
 
-    if (contact.email_valid === false) {
+    if (contact.email_valid !== undefined && contact.email_valid !== true) {
       return Response.json({ skipped: true, reason: 'email_invalid' });
     }
 
-    const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
-
     const subject = contact.party_name
-      ? `${contact.party_acronym || contact.party_name} - Regularizacao Partidaria 2026 - Diagnostico Gratuito`
-      : `Regularizacao Partidaria 2026 - Diagnostico Gratuito para seu Diretorio`;
+      ? `${contact.party_acronym || contact.party_name} - Regularização Partidária 2026 - Diagnóstico Gratuito`
+      : `Regularização Partidária 2026 - Diagnóstico Gratuito para seu Diretório`;
 
-    const rawMessage = buildMimeMessage(
-      contact.email,
-      contact.name || contact.party_name,
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: contact.email,
       subject,
-      buildHtml(contact)
-    );
-
-    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ raw: rawMessage }),
+      body: buildHtml(contact),
+      from_name: 'Marcos Eduardo - Escritório Jurídico',
     });
-
-    if (!res.ok) {
-      const err = await res.text();
-      return Response.json({ error: err }, { status: 500 });
-    }
 
     if (contact.id) {
       await base44.asServiceRole.entities.Contact.update(contact.id, {
