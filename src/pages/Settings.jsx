@@ -6,6 +6,7 @@ import {
   Save, Check, Building2, Phone, Globe, Key, Sheet
 } from 'lucide-react';
 import GoogleSheetsSync from '@/components/settings/GoogleSheetsSync';
+import SupabaseStatus from '@/components/settings/SupabaseStatus.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -157,6 +158,9 @@ export default function Settings() {
               <h2 className="text-base font-semibold text-foreground">Integrações Externas</h2>
               <p className="text-sm text-muted-foreground mb-4">Conecte fontes externas de leads ao CRM.</p>
               <GoogleSheetsSync />
+              <div className="border-t border-border pt-5 mt-5">
+                <SupabaseStatus />
+              </div>
             </>
           )}
 
