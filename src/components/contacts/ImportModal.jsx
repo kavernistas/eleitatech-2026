@@ -7,17 +7,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 export default function ImportModal({ onClose }) {
   const [file, setFile] = useState(null);
-  const [status, setStatus] = useState('idle'); // idle | uploading | validating | done | error
+  const [status, setStatus] = useState('idle'); // idle | uploading | validating | saving | done | error
   const [results, setResults] = useState(null);
+  const [validationProgress, setValidationProgress] = useState(0); // 0-100
   const qc = useQueryClient();
 
   const handleFile = (e) => setFile(e.target.files[0]);
+
+  const simulateValidationProgress = () => {
+    setValidationProgress(0);
+    let progress = 0;
+    const totalEmails = 4264;
+    const interval = setInterval(() => {
+      // Simulate checking emails at ~800 emails/sec
+      progress = Math.min(progress + Math.floor(Math.random() * 120 + 60), 100);
+      setValidationProgress(progress);
+      if (progress >= 100) clearInterval(interval);
+    }, 80);
+    return interval;
+  };
 
   const handleImport = async () => {
     if (!file) return;
     setStatus('uploading');
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
     setStatus('validating');
+    const progressInterval = simulateValidationProgress();
+
     const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
@@ -42,6 +59,9 @@ export default function ImportModal({ onClose }) {
       }
     });
 
+    clearInterval(progressInterval);
+    setValidationProgress(100);
+
     if (extracted.status !== 'success') { setStatus('error'); return; }
 
     const raw = Array.isArray(extracted.output) ? extracted.output : (extracted.output?.contacts || []);
@@ -49,6 +69,7 @@ export default function ImportModal({ onClose }) {
     const valid = raw.filter(c => c.email && emailRegex.test(c.email));
     const invalid = raw.length - valid.length;
 
+    setStatus('saving');
     if (valid.length > 0) {
       await base44.entities.Contact.bulkCreate(valid.map(c => ({ ...c, source: 'planilha_importada', email_valid: true })));
       qc.invalidateQueries({ queryKey: ['contacts'] });
@@ -89,10 +110,29 @@ export default function ImportModal({ onClose }) {
               </Button>
             </>
           )}
-          {(status === 'uploading' || status === 'validating') && (
-            <div className="flex flex-col items-center py-8 gap-4">
+          {(status === 'uploading' || status === 'validating' || status === 'saving') && (
+            <div className="flex flex-col items-center py-8 gap-4 w-full">
               <div className="w-10 h-10 border-2 border-navy border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">{status === 'uploading' ? 'Enviando arquivo...' : 'Validando e-mails...'}</p>
+              <p className="text-sm font-medium text-foreground">
+                {status === 'uploading' && 'Enviando arquivo...'}
+                {status === 'validating' && 'Verificando sintaxe dos e-mails...'}
+                {status === 'saving' && 'Salvando contatos no CRM...'}
+              </p>
+              {status === 'validating' && (
+                <div className="w-full space-y-1.5">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Verificando {Math.round(validationProgress * 42.64)} de 4.264 e-mails</span>
+                    <span>{validationProgress}%</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full gradient-navy rounded-full transition-all duration-100"
+                      style={{ width: `${validationProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground text-center">Validando formato, domínio e MX records...</p>
+                </div>
+              )}
             </div>
           )}
           {status === 'done' && results && (

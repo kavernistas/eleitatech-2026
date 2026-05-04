@@ -3,8 +3,9 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Settings2, User, Mail, Bell, Shield, Palette,
-  Save, Check, Building2, Phone, Globe, Key
+  Save, Check, Building2, Phone, Globe, Key, Sheet
 } from 'lucide-react';
+import GoogleSheetsSync from '@/components/settings/GoogleSheetsSync';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 const tabs = [
   { id: 'perfil', label: 'Perfil do Escritório', icon: Building2 },
   { id: 'remetente', label: 'Remetente de E-mail', icon: Mail },
+  { id: 'integracoes', label: 'Integrações', icon: Sheet },
   { id: 'notificacoes', label: 'Notificações', icon: Bell },
   { id: 'seguranca', label: 'Segurança', icon: Shield },
 ];
@@ -147,6 +149,14 @@ export default function Settings() {
                   <Textarea value={remetente.assinatura} onChange={e => setRemetente({ ...remetente, assinatura: e.target.value })} className="mt-1 text-sm min-h-[100px] font-mono text-xs" />
                 </div>
               </div>
+            </>
+          )}
+
+          {activeTab === 'integracoes' && (
+            <>
+              <h2 className="text-base font-semibold text-foreground">Integrações Externas</h2>
+              <p className="text-sm text-muted-foreground mb-4">Conecte fontes externas de leads ao CRM.</p>
+              <GoogleSheetsSync />
             </>
           )}
 

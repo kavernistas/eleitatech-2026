@@ -10,6 +10,7 @@ import KpiCard from '@/components/dashboard/KpiCard';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import Countdown2026 from '@/components/dashboard/Countdown2026';
 import UrgentActions from '@/components/dashboard/UrgentActions';
+import PushNotificationBanner from '@/components/dashboard/PushNotificationBanner';
 
 const areaData = [
   { day: 'Seg', aberturas: 312, cliques: 89 },
@@ -67,6 +68,9 @@ export default function Dashboard() {
           Sistema Ativo
         </div>
       </div>
+
+      {/* Push Notification Banner */}
+      <PushNotificationBanner />
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

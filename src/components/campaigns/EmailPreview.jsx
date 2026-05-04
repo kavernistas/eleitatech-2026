@@ -6,16 +6,25 @@ const SAMPLE_CONTACT = {
   estado: 'SP',
 };
 
+const FALLBACK = {
+  nome_responsavel: 'Responsável Partidário',
+  nome_contato: 'Responsável Partidário',
+  nome_partido: 'Seu Partido',
+  sigla_partido: 'PART',
+  cidade: 'sua cidade',
+  estado: 'seu estado',
+};
+
 function resolvePlaceholders(text, contact) {
   return text
-    .replace(/\{\{nome_responsavel\}\}/g, contact.nome_responsavel)
-    .replace(/\{\{nome_contato\}\}/g, contact.nome_responsavel)
-    .replace(/\{\{nome_partido\}\}/g, contact.nome_partido)
-    .replace(/\{\{partido_nome\}\}/g, contact.nome_partido)
-    .replace(/\{\{sigla_partido\}\}/g, contact.sigla_partido)
-    .replace(/\{\{partido_sigla\}\}/g, contact.sigla_partido)
-    .replace(/\{\{cidade\}\}/g, contact.cidade)
-    .replace(/\{\{estado\}\}/g, contact.estado);
+    .replace(/\{\{nome_responsavel\}\}/g, contact.nome_responsavel || FALLBACK.nome_responsavel)
+    .replace(/\{\{nome_contato\}\}/g, contact.nome_responsavel || FALLBACK.nome_contato)
+    .replace(/\{\{nome_partido\}\}/g, contact.nome_partido || FALLBACK.nome_partido)
+    .replace(/\{\{partido_nome\}\}/g, contact.nome_partido || FALLBACK.nome_partido)
+    .replace(/\{\{sigla_partido\}\}/g, contact.sigla_partido || FALLBACK.sigla_partido)
+    .replace(/\{\{partido_sigla\}\}/g, contact.sigla_partido || FALLBACK.sigla_partido)
+    .replace(/\{\{cidade\}\}/g, contact.cidade || FALLBACK.cidade)
+    .replace(/\{\{estado\}\}/g, contact.estado || FALLBACK.estado);
 }
 
 function renderBlock(block) {

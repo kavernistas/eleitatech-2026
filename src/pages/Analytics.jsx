@@ -3,7 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { BarChart2, MousePointer, Mail, TrendingUp, Map } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+  LineChart, Line, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  Cell
 } from 'recharts';
 
 const weeklyData = [
@@ -113,24 +114,66 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Click Map */}
-      <div className="bg-card border border-border rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <MousePointer size={14} /> Mapa de Cliques por Serviço
-        </h3>
-        <div className="space-y-3">
-          {clickMapData.map(item => (
-            <div key={item.service} className="flex items-center gap-3">
-              <p className="text-sm text-foreground w-48 flex-shrink-0">{item.service}</p>
-              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full gradient-navy rounded-full transition-all duration-700" style={{ width: `${item.pct}%` }} />
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground w-24 text-right">
-                <span className="font-semibold text-foreground">{item.clicks}</span>
-                <span>({item.pct}%)</span>
-              </div>
+      {/* Click Map — Comparison + Bar Chart */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        {/* Comparative bar chart CNPJ vs Contas */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+            <BarChart2 size={14} /> Interesse: CNPJ vs Contas 2025
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">Cliques únicos rastreados por serviço</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={[
+              { name: 'Regularização\nCNPJ', cliques: 487, color: 'hsl(222,65%,28%)' },
+              { name: 'Prestação de\nContas 2025', cliques: 298, color: 'hsl(38,75%,52%)' },
+            ]} barSize={56}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ borderRadius: '8px', fontSize: 12, border: '1px solid hsl(var(--border))' }}
+                formatter={(v) => [`${v} cliques únicos`]}
+              />
+              <Bar dataKey="cliques" radius={[6, 6, 0, 0]}>
+                <Cell fill="hsl(222,65%,28%)" />
+                <Cell fill="hsl(38,75%,52%)" />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex items-center justify-around mt-3">
+            <div className="text-center">
+              <p className="text-xl font-bold text-navy">487</p>
+              <p className="text-[11px] text-muted-foreground">Cliques CNPJ</p>
+              <p className="text-[10px] text-success font-medium">+63% vs Contas</p>
             </div>
-          ))}
+            <div className="w-px h-10 bg-border" />
+            <div className="text-center">
+              <p className="text-xl font-bold text-gold">298</p>
+              <p className="text-[11px] text-muted-foreground">Cliques Contas</p>
+              <p className="text-[10px] text-muted-foreground">Base comparativa</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Horizontal click map */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <MousePointer size={14} /> Mapa de Cliques por Serviço
+          </h3>
+          <div className="space-y-3">
+            {clickMapData.map(item => (
+              <div key={item.service} className="flex items-center gap-3">
+                <p className="text-xs text-foreground w-40 flex-shrink-0 leading-tight">{item.service}</p>
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full gradient-navy rounded-full transition-all duration-700" style={{ width: `${item.pct}%` }} />
+                </div>
+                <div className="text-xs text-muted-foreground w-20 text-right flex-shrink-0">
+                  <span className="font-semibold text-foreground">{item.clicks}</span>
+                  <span className="ml-1">({item.pct}%)</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
