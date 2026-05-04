@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   ArrowLeft, Wand2, Save, Eye, EyeOff, Plus,
-  Type, AlignLeft, MousePointer, Minus, Image, ChevronDown
+  Type, AlignLeft, MousePointer, Minus, Image, Clock, CalendarClock, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +54,14 @@ export default function CampaignEditor({ campaign, onBack }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiTone, setAiTone] = useState('formal');
   const [activeTextBlockId, setActiveTextBlockId] = useState(null);
+  // Scheduling
+  const [scheduleMode, setScheduleMode] = useState(!!campaign?.scheduled_at); // true = agendado
+  const [schedDate, setSchedDate] = useState(
+    campaign?.scheduled_at ? campaign.scheduled_at.slice(0, 10) : ''
+  );
+  const [schedTime, setSchedTime] = useState(
+    campaign?.scheduled_at ? campaign.scheduled_at.slice(11, 16) : '08:00'
+  );
   const qc = useQueryClient();
 
   const saveMutation = useMutation({
@@ -147,11 +155,23 @@ ${bodyText}`,
     return '';
   }).join('');
 
+  const scheduledAt = scheduleMode && schedDate
+    ? new Date(`${schedDate}T${schedTime || '08:00'}:00`).toISOString()
+    : null;
+
   const handleSave = () => {
-    saveMutation.mutate({
+    const payload = {
       name, subject_a: subject, preview_text: previewText,
-      sender_name: senderName, html_body: buildHtml(), status: 'rascunho', type: 'email_marketing',
-    });
+      sender_name: senderName, html_body: buildHtml(), type: 'email_marketing',
+    };
+    if (scheduleMode && scheduledAt) {
+      payload.status = 'agendado';
+      payload.scheduled_at = scheduledAt;
+    } else {
+      payload.status = 'rascunho';
+      payload.scheduled_at = null;
+    }
+    saveMutation.mutate(payload);
   };
 
   return (
@@ -178,8 +198,15 @@ ${bodyText}`,
           {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
           {showPreview ? 'Editar' : 'Prévia'}
         </Button>
+        {scheduleMode && scheduledAt && (
+          <span className="hidden sm:flex items-center gap-1.5 text-xs text-gold bg-gold/10 border border-gold/30 px-2.5 py-1 rounded-full font-medium">
+            <CalendarClock size={12} />
+            {new Date(scheduledAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+          </span>
+        )}
         <Button onClick={handleSave} disabled={saveMutation.isPending} className="h-8 bg-navy text-white hover:bg-navy/90" size="sm">
-          <Save size={13} className="mr-1.5" /> Salvar
+          <Save size={13} className="mr-1.5" />
+          {scheduleMode && scheduledAt ? 'Agendar' : 'Salvar'}
         </Button>
       </div>
 
@@ -239,6 +266,57 @@ ${bodyText}`,
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Scheduling */}
+            <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock size={13} className="text-muted-foreground" />
+                  <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Agendamento</h3>
+                </div>
+                <button
+                  onClick={() => setScheduleMode(p => !p)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${scheduleMode ? 'bg-navy' : 'bg-muted-foreground/30'}`}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${scheduleMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+
+              {scheduleMode ? (
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-xs">Data</Label>
+                    <input
+                      type="date"
+                      value={schedDate}
+                      min={new Date().toISOString().slice(0, 10)}
+                      onChange={e => setSchedDate(e.target.value)}
+                      className="mt-1 w-full h-8 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Hora</Label>
+                    <input
+                      type="time"
+                      value={schedTime}
+                      onChange={e => setSchedTime(e.target.value)}
+                      className="mt-1 w-full h-8 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                  </div>
+                  {scheduledAt && (
+                    <p className="text-[11px] text-gold bg-gold/10 border border-gold/20 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                      <CalendarClock size={11} />
+                      Envio agendado para {new Date(scheduledAt).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}
+                    </p>
+                  )}
+                  {scheduleMode && !schedDate && (
+                    <p className="text-[11px] text-muted-foreground">Selecione uma data para agendar.</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">Ative para definir data e hora de envio automático.</p>
+              )}
             </div>
 
             {/* Add blocks */}

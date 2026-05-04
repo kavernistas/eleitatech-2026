@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Send, Clock, BarChart2, Copy, Trash2, TestTube, Eye } from 'lucide-react';
+import { Plus, Send, Clock, BarChart2, Copy, Trash2, TestTube, Eye, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CampaignEditor from '@/components/campaigns/CampaignEditor';
@@ -90,6 +90,12 @@ export default function Campaigns() {
                   </div>
                   <p className="text-sm text-muted-foreground truncate">{campaign.subject_a || 'Sem assunto'}</p>
 
+                  {campaign.status === 'agendado' && campaign.scheduled_at && (
+                    <div className="flex items-center gap-1.5 mt-2 text-xs text-gold bg-gold/10 border border-gold/20 rounded-full px-2.5 py-0.5 w-fit">
+                      <CalendarClock size={11} />
+                      Agendado: {new Date(campaign.scheduled_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                    </div>
+                  )}
                   <div className="flex items-center gap-5 mt-3">
                     <div className="text-center">
                       <p className="text-sm font-bold text-foreground">{(campaign.total_sent || 0).toLocaleString()}</p>
