@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import {
   Search, Filter, Plus, Upload, Download, Tag,
   Mail, Phone, MapPin, Clock, ChevronRight,
-  CheckCircle, AlertCircle, Circle, Star, Users
+  CheckCircle, AlertCircle, Circle, Star, Users, X
 } from 'lucide-react';
 
 function exportToCSV(contacts) {
@@ -30,6 +30,7 @@ import ContactCard from '@/components/contacts/ContactCard';
 import ContactDetail from '@/components/contacts/ContactDetail';
 import ImportModal from '@/components/contacts/ImportModal';
 import NewContactModal from '@/components/contacts/NewContactModal';
+import BulkEmailModal from '@/components/contacts/BulkEmailModal.jsx';
 
 const statusColors = {
   novo: 'bg-muted text-muted-foreground',
@@ -52,11 +53,32 @@ export default function Contacts() {
   const [selectedContact, setSelectedContact] = useState(null);
   const [showImport, setShowImport] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showBulkEmail, setShowBulkEmail] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ['contacts'],
     queryFn: () => base44.entities.Contact.list('-created_date', 5000),
   });
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(c => c.id)));
+    }
+  };
+
+  const selectedContacts = filtered.filter(c => selectedIds.has(c.id));
 
   // Derive unique values for filter dropdowns
   const parties = [...new Set(contacts.map(c => c.party_name).filter(Boolean))].sort();
@@ -93,15 +115,40 @@ export default function Contacts() {
             <p className="text-muted-foreground text-sm">{contacts.length.toLocaleString('pt-BR')} partidos cadastrados</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered)} title="Exportar para CSV">
-              <Download size={14} className="mr-1.5" /> Exportar
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
-              <Upload size={14} className="mr-1.5" /> Importar
-            </Button>
-            <Button size="sm" className="bg-navy text-white hover:bg-navy/90" onClick={() => setShowNew(true)}>
-              <Plus size={14} className="mr-1.5" /> Novo Contato
-            </Button>
+            {selectionMode ? (
+              <>
+                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}>
+                  <X size={14} className="mr-1.5" /> Cancelar
+                </Button>
+                <Button variant="outline" size="sm" onClick={toggleSelectAll}>
+                  {selectedIds.size === filtered.length ? 'Desmarcar todos' : `Selecionar todos (${filtered.length})`}
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-navy text-white hover:bg-navy/90"
+                  disabled={selectedIds.size === 0}
+                  onClick={() => setShowBulkEmail(true)}
+                >
+                  <Mail size={14} className="mr-1.5" />
+                  Disparar e-mail ({selectedIds.size})
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered)} title="Exportar para CSV">
+                  <Download size={14} className="mr-1.5" /> Exportar
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
+                  <Upload size={14} className="mr-1.5" /> Importar
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); setSelectedContact(null); }}>
+                  <Mail size={14} className="mr-1.5" /> Disparar E-mails
+                </Button>
+                <Button size="sm" className="bg-navy text-white hover:bg-navy/90" onClick={() => setShowNew(true)}>
+                  <Plus size={14} className="mr-1.5" /> Novo Contato
+                </Button>
+              </>
+            )}
           </div>
         </div>
         {/* Search + filter toggle row */}
@@ -217,13 +264,30 @@ export default function Contacts() {
             </div>
           ) : (
             filtered.map(contact => (
-              <ContactCard
-                key={contact.id}
-                contact={contact}
-                selected={selectedContact?.id === contact.id}
-                statusColors={statusColors}
-                onClick={() => setSelectedContact(contact)}
-              />
+              <div key={contact.id} className="relative flex items-stretch">
+                {selectionMode && (
+                  <button
+                    onClick={() => toggleSelect(contact.id)}
+                    className={`flex-shrink-0 w-10 flex items-center justify-center border-r border-border transition-colors ${
+                      selectedIds.has(contact.id) ? 'bg-navy/10' : 'hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                      selectedIds.has(contact.id) ? 'bg-navy border-navy' : 'border-muted-foreground/40'
+                    }`}>
+                      {selectedIds.has(contact.id) && <CheckCircle size={10} className="text-white" />}
+                    </div>
+                  </button>
+                )}
+                <div className="flex-1">
+                  <ContactCard
+                    contact={contact}
+                    selected={selectionMode ? selectedIds.has(contact.id) : selectedContact?.id === contact.id}
+                    statusColors={statusColors}
+                    onClick={() => selectionMode ? toggleSelect(contact.id) : setSelectedContact(contact)}
+                  />
+                </div>
+              </div>
             ))
           )}
         </div>
@@ -252,6 +316,12 @@ export default function Contacts() {
 
       {showImport && <ImportModal onClose={() => setShowImport(false)} />}
       {showNew && <NewContactModal onClose={() => setShowNew(false)} />}
+      {showBulkEmail && (
+        <BulkEmailModal
+          contacts={selectedContacts}
+          onClose={() => { setShowBulkEmail(false); setSelectionMode(false); setSelectedIds(new Set()); }}
+        />
+      )}
     </div>
   );
 }

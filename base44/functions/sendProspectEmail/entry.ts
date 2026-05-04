@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-function buildHtml(contact) {
+function buildHtml(contact, tpl) {
   const name = contact.name || contact.party_name || 'Responsável';
   const party = contact.party_acronym || contact.party_name || '';
   const location = [contact.city, contact.state].filter(Boolean).join('/');
@@ -18,18 +18,17 @@ function buildHtml(contact) {
   <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Dr. Marcos Eduardo · Direito Eleitoral e Partidário</p>
 </td></tr>
 <tr><td style="padding:40px;">
+  <p style="margin:0 0 8px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${tpl.headline}</p>
   <p style="margin:0 0 16px;font-size:16px;color:#1a3a6b;font-weight:600;">Olá, ${name}${greeting ? ' — ' + greeting : ''}!</p>
-  <p style="margin:0 0 16px;font-size:15px;color:#444;line-height:1.7;">
-    Identificamos que o seu diretório partidário pode ter <strong>pendências de regularização</strong> junto à Justiça Eleitoral para 2026.
-  </p>
-  <p style="margin:0 0 20px;font-size:15px;color:#444;line-height:1.7;">Nosso escritório é especializado em:</p>
+  <p style="margin:0 0 20px;font-size:15px;color:#444;line-height:1.7;">${tpl.body1}</p>
+  <p style="margin:0 0 12px;font-size:15px;color:#444;line-height:1.7;">Nosso escritório é especializado em:</p>
   <div style="background:#f0f5ff;border-left:4px solid #2d5fa6;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:12px;">
-    <strong style="color:#1a3a6b;font-size:14px;">📋 Regularização de CNPJ Partidário</strong><br>
-    <span style="color:#666;font-size:13px;">Pendências 2024 · Baixa de débitos · Adequação cadastral</span>
+    <strong style="color:#1a3a6b;font-size:14px;">${tpl.h1icon} ${tpl.h1title}</strong><br>
+    <span style="color:#666;font-size:13px;">${tpl.h1sub}</span>
   </div>
   <div style="background:#f0f5ff;border-left:4px solid #f0c040;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:24px;">
-    <strong style="color:#1a3a6b;font-size:14px;">📊 Prestação de Contas 2025 (TSE/TRE)</strong><br>
-    <span style="color:#666;font-size:13px;">Relatórios · Adequação · Recursos administrativos</span>
+    <strong style="color:#1a3a6b;font-size:14px;">${tpl.h2icon} ${tpl.h2title}</strong><br>
+    <span style="color:#666;font-size:13px;">${tpl.h2sub}</span>
   </div>
   <table width="100%"><tr><td align="center" style="padding:8px 0 24px;">
     <a href="https://wa.me/5511999990000?text=Ol%C3%A1%2C+vim+pelo+e-mail+sobre+regulariza%C3%A7%C3%A3o+partid%C3%A1ria"
@@ -52,11 +51,36 @@ function buildHtml(contact) {
 </html>`;
 }
 
+const TEMPLATES = {
+  prospeccao_cnpj: {
+    headline: 'Pendência de CNPJ Identificada',
+    body1: 'Identificamos que o seu diretório partidário pode ter <strong>pendências de regularização do CNPJ</strong> junto à Receita Federal e à Justiça Eleitoral para 2026.',
+    h1icon: '📋', h1title: 'Regularização de CNPJ Partidário', h1sub: 'Pendências 2024 · Baixa de débitos · Adequação cadastral',
+    h2icon: '📊', h2title: 'Prestação de Contas 2025 (TSE/TRE)', h2sub: 'Relatórios · Adequação · Recursos administrativos',
+    subject: (c) => `${c.party_acronym || c.party_name || 'Diretório'} - Regularização CNPJ 2026 - Diagnóstico Gratuito`,
+  },
+  prospeccao_contas: {
+    headline: 'Prazo da Prestação de Contas 2025',
+    body1: 'O prazo para entrega da <strong>prestação de contas 2025</strong> ao TSE/TRE está se aproximando. Seu diretório está preparado?',
+    h1icon: '📊', h1title: 'Prestação de Contas 2025 (TSE/TRE)', h1sub: 'Relatórios · Adequação · Recursos administrativos',
+    h2icon: '⚖️', h2title: 'Defesa em Processos Eleitorais', h2sub: 'Representações · Recursos · Prestação jurisdicional',
+    subject: (c) => `${c.party_acronym || c.party_name || 'Diretório'} - Prestação de Contas 2025 - Suporte Especializado`,
+  },
+  prospeccao_geral: {
+    headline: 'Assessoria Eleitoral para 2026',
+    body1: 'Seu diretório está preparado para as <strong>eleições municipais de 2026</strong>? Nossa equipe especializada pode apoiar em todas as frentes jurídicas e eleitorais.',
+    h1icon: '🗳️', h1title: 'Registro de Candidatos 2026', h1sub: 'Documentação · Elegibilidade · Recursos',
+    h2icon: '📋', h2title: 'Regularização Completa do Diretório', h2sub: 'CNPJ · Contas · Estatuto · Representações',
+    subject: (c) => `${c.party_acronym || c.party_name || 'Diretório'} - Assessoria Jurídica Eleitoral 2026`,
+  },
+};
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const contact = body.contact || body.data;
+    const templateId = body.template_id || 'prospeccao_geral';
 
     if (!contact?.email) {
       return Response.json({ error: 'No email provided' }, { status: 400 });
@@ -66,14 +90,13 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'email_invalid' });
     }
 
-    const subject = contact.party_name
-      ? `${contact.party_acronym || contact.party_name} - Regularização Partidária 2026 - Diagnóstico Gratuito`
-      : `Regularização Partidária 2026 - Diagnóstico Gratuito para seu Diretório`;
+    const tpl = TEMPLATES[templateId] || TEMPLATES['prospeccao_geral'];
+    const subject = tpl.subject(contact);
 
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: contact.email,
       subject,
-      body: buildHtml(contact),
+      body: buildHtml(contact, tpl),
       from_name: 'Marcos Eduardo - Escritório Jurídico',
     });
 
