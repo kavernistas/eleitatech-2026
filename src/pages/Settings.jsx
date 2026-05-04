@@ -6,7 +6,7 @@ import {
   Save, Check, Building2, Phone, Globe, Key, Sheet
 } from 'lucide-react';
 import GoogleSheetsSync from '@/components/settings/GoogleSheetsSync';
-import SupabaseStatus from '@/components/settings/SupabaseStatus.jsx';
+import SupabaseStatus from '@/components/settings/SupabaseStatus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
