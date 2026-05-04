@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { X, Mail, Phone, MapPin, Tag, MessageSquare, Edit2, Save, Plus, Wand2, Bot } from 'lucide-react';
+import WhatsAppButton from './WhatsAppButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -68,9 +69,12 @@ Foque em: potencial de fechamento, urgências e próxima ação recomendada.`,
             <p className="text-sm text-muted-foreground">{contact.party_name} {contact.party_acronym ? `(${contact.party_acronym})` : ''}</p>
           </div>
         </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted lg:hidden">
-          <X size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          <WhatsAppButton contact={contact} />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted lg:hidden">
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Status */}
