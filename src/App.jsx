@@ -15,6 +15,7 @@ import AIAgent from '@/pages/AIAgent';
 import Forms from '@/pages/Forms';
 import Analytics from '@/pages/Analytics';
 import Settings from '@/pages/Settings';
+import WhatsAppHub from '@/pages/WhatsAppHub';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -50,6 +51,7 @@ const AuthenticatedApp = () => {
         <Route path="/forms" element={<Forms />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/whatsapp" element={<WhatsAppHub />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

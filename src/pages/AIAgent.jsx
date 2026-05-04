@@ -60,7 +60,7 @@ export default function AIAgent() {
 
   const sendMessage = async () => {
     if (!message.trim() || loading) return;
-    const userMsg = { role: 'user', content: message };
+    const userMsg = { role: 'user', content: message, ts: new Date().toISOString() };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setMessage('');
@@ -74,7 +74,7 @@ export default function AIAgent() {
 
     const needsHuman = response.includes('[HUMANO_NECESSÁRIO]');
     const cleanResponse = response.replace('[HUMANO_NECESSÁRIO]', '').trim();
-    const assistantMsg = { role: 'assistant', content: cleanResponse };
+    const assistantMsg = { role: 'assistant', content: cleanResponse, ts: new Date().toISOString() };
     const updated = [...newMessages, assistantMsg];
     setMessages(updated);
 
@@ -107,9 +107,19 @@ export default function AIAgent() {
 
   const handleAssumirAtendimento = async () => {
     if (!selectedContact?.id) return;
-    await base44.entities.Contact.update(selectedContact.id, { status: 'contato_feito' });
+    const handoverMsg = {
+      role: 'human',
+      content: 'Olá! Sou o Marcos Eduardo. Vou assumir o atendimento pessoalmente para finalizarmos a sua regularização. 🤝',
+      ts: new Date().toISOString()
+    };
+    const updated = [...messages, handoverMsg];
+    await base44.entities.Contact.update(selectedContact.id, {
+      status: 'contato_feito',
+      whatsapp_conversation: updated,
+    });
     qc.invalidateQueries({ queryKey: ['contacts-ai'] });
     setSelectedContact(prev => ({ ...prev, status: 'contato_feito' }));
+    setMessages(updated);
   };
 
   return (
