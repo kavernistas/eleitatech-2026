@@ -4,13 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Phone, Database, Check, Save, Eye, EyeOff } from 'lucide-react';
+import { Phone, Database, Check, Save, Eye, EyeOff, Info, Zap, Copy } from 'lucide-react';
 
 const KEYS = [
   { section: 'evolution', label: 'API Evolution (WhatsApp)', icon: Phone, color: 'green', fields: [
-    { key: 'EVOLUTION_API_URL', label: 'URL da API', placeholder: 'https://sua-instancia.evolution-api.com', type: 'text' },
-    { key: 'EVOLUTION_API_KEY', label: 'Chave da API', placeholder: 'sua-chave-evolution', type: 'password' },
-    { key: 'EVOLUTION_INSTANCE_NAME', label: 'Nome da Instância', placeholder: 'minha-instancia', type: 'text' },
+    { key: 'EVOLUTION_API_URL', label: 'URL da API', placeholder: 'http://legal-legis-evolution-api.f5rg2q.easypanel.host', type: 'text' },
+    { key: 'EVOLUTION_API_KEY', label: 'Chave da API (AUTHENTICATION_API_KEY)', placeholder: 'sua-chave-evolution', type: 'password' },
+    { key: 'EVOLUTION_INSTANCE_NAME', label: 'Nome da Instância', placeholder: 'eleitatech-principal', type: 'text' },
   ]},
   { section: 'supabase', label: 'Supabase', icon: Database, color: 'emerald', fields: [
     { key: 'SUPABASE_URL', label: 'URL do Projeto', placeholder: 'https://xxxx.supabase.co', type: 'text' },
@@ -119,6 +119,21 @@ export default function ApiKeysSettings() {
           </div>
         );
       })}
+
+      {/* Setup checklist */}
+      <div className="border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 rounded-xl p-5 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Zap size={15} className="text-amber-600" />
+          <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">Checklist de Configuração — Evolution API</p>
+        </div>
+        <ol className="space-y-1.5 text-xs text-amber-700 dark:text-amber-300 list-decimal list-inside">
+          <li>Acesse o <strong>Easypanel</strong> → aba <strong>Ambiente</strong> → confirme que <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">AUTHENTICATION_API_KEY</code> é igual à chave acima.</li>
+          <li>No <strong>Evolution Manager</strong>, abra a instância <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">eleitatech-principal</code> → Webhook → insira a URL da função <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">whatsappWebhook</code>.</li>
+          <li>Ative o evento <strong>messages.upsert</strong> no webhook.</li>
+          <li>Em <strong>Integrações</strong> na Evolution API, insira sua chave OpenAI para ativar as respostas automáticas da IA.</li>
+          <li>Vá para <strong>Central WhatsApp</strong> → aba Conexão → clique em <strong>Conectar WhatsApp</strong> para gerar o QR Code.</li>
+        </ol>
+      </div>
 
       <Button onClick={handleSave} disabled={mutation.isPending} className="bg-navy text-white hover:bg-navy/90">
         {saved ? <><Check size={13} className="mr-1.5" />Salvo!</> : <><Save size={13} className="mr-1.5" />Salvar Chaves</>}
