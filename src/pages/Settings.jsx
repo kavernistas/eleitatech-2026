@@ -9,6 +9,7 @@ import GoogleSheetsSync from '@/components/settings/GoogleSheetsSync';
 import SupabaseStatus from '@/components/settings/SupabaseStatus';
 import SchedulingLinkSettings from '@/components/settings/SchedulingLinkSettings';
 import ApiKeysSettings from '@/components/settings/ApiKeysSettings';
+import WebhookDocs from '@/components/settings/WebhookDocs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -169,6 +170,10 @@ export default function Settings() {
               <div className="border-t border-border pt-5 mt-5">
                 <h3 className="font-semibold text-foreground text-sm mb-4">Chaves de API</h3>
                 <ApiKeysSettings />
+              </div>
+
+              <div className="border-t border-border pt-5 mt-5">
+                <WebhookDocs />
               </div>
             </>
           )}
