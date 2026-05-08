@@ -62,7 +62,7 @@ function QrCodeDisplay({ status, qrBase64, connectedPhone }) {
 }
 
 // ── Setup tab: configurações da instância ────────────────────────────────────
-function SetupTab({ connectionStatus, qrBase64, connectedPhone, inboxContacts, urgentContacts, contacts, onConnect, onDisconnect, isConnecting }) {
+function SetupTab({ connectionStatus, qrBase64, connectedPhone, inboxContacts, urgentContacts, contacts, onConnect, onDisconnect, onRefreshQr, isConnecting }) {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-2xl mx-auto space-y-4">
@@ -78,9 +78,14 @@ function SetupTab({ connectionStatus, qrBase64, connectedPhone, inboxContacts, u
               </Button>
             )}
             {connectionStatus === 'connecting' && (
-              <Button variant="outline" onClick={onDisconnect} className="gap-2">
-                <RefreshCw size={16} /> Cancelar
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={onRefreshQr} variant="outline" className="gap-2">
+                  <RefreshCw size={16} /> Atualizar QR Code
+                </Button>
+                <Button variant="outline" onClick={onDisconnect} className="gap-2 text-destructive border-destructive/30">
+                  <X size={16} /> Cancelar
+                </Button>
+              </div>
             )}
             {connectionStatus === 'online' && (
               <Button variant="outline" onClick={onDisconnect} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5">
@@ -281,23 +286,57 @@ export default function WhatsAppHub() {
 
   const handleConnect = async () => {
     setIsConnecting(true);
+    setQrBase64(null);
+    setConnectionStatus('connecting');
+
+    // 1. Tenta criar a instância (ignora erro se já existir)
     try {
-      // Try to create instance (may already exist)
       await base44.functions.invoke('evolutionApi', { action: 'createInstance' });
     } catch {}
+
+    // 2. Aguarda um pouco para a instância inicializar
+    await new Promise(r => setTimeout(r, 2000));
+
+    // 3. Busca QR Code com até 3 tentativas
+    let gotQr = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await base44.functions.invoke('evolutionApi', { action: 'getQrCode' });
+        if (res.data?.base64) {
+          setQrBase64(res.data.base64);
+          gotQr = true;
+          break;
+        } else if (res.data?.instance?.state === 'open') {
+          setConnectionStatus('online');
+          setIsConnecting(false);
+          return;
+        }
+      } catch {}
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
+    if (!gotQr) {
+      // Fallback: verifica se já está conectado
+      try {
+        const statusRes = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
+        if (statusRes.data?.instance?.state === 'open') {
+          setConnectionStatus('online');
+        } else {
+          setConnectionStatus('disconnected');
+        }
+      } catch {
+        setConnectionStatus('disconnected');
+      }
+    }
+
+    setIsConnecting(false);
+  };
+
+  const handleRefreshQr = async () => {
     try {
       const res = await base44.functions.invoke('evolutionApi', { action: 'getQrCode' });
-      if (res.data?.base64) {
-        setQrBase64(res.data.base64);
-        setConnectionStatus('connecting');
-      } else {
-        // Already connected
-        setConnectionStatus('online');
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    setIsConnecting(false);
+      if (res.data?.base64) setQrBase64(res.data.base64);
+    } catch {}
   };
 
   const handleDisconnect = async () => {
@@ -411,6 +450,7 @@ export default function WhatsAppHub() {
           contacts={contacts}
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
+          onRefreshQr={handleRefreshQr}
           isConnecting={isConnecting}
         />
       )}
