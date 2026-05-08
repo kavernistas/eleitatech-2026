@@ -89,7 +89,7 @@ export default function Automations() {
             { label: 'Aguarda 48h', sub: 'Sem resposta?', color: 'bg-muted border border-border text-foreground' },
             { label: 'E-mail de Diagnóstico', sub: 'Link CTA', color: 'bg-gold' },
             { label: 'Abriu sem Clicar?', sub: '24h depois', color: 'bg-orange-500' },
-            { label: 'SMS Remarketing', sub: 'Reforço', color: 'bg-green-600' },
+            { label: 'WhatsApp Reforço', sub: 'IA automática', color: 'bg-green-600' },
           ].map((step, i) => (
             <div key={i} className="flex items-center gap-2 flex-shrink-0">
               <div className={`${step.color} text-white rounded-lg px-3 py-2 text-center min-w-[100px]`}>
