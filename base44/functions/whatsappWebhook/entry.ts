@@ -104,6 +104,12 @@ function resolveStatus(currentStatus, suggestedStatus) {
 Deno.serve(async (req) => {
   if (req.method !== "POST") return Response.json({ ok: true });
 
+  const expectedSecret = Deno.env.get("WEBHOOK_SECRET");
+  const receivedSecret = req.headers.get("x-webhook-secret");
+  if (expectedSecret && receivedSecret !== expectedSecret) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const base44 = createClientFromRequest(req);
   let body;
   try { body = await req.json(); } catch { return Response.json({ ok: true }); }
