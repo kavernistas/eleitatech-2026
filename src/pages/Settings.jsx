@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Settings2, User, Mail, Bell, Shield, Palette,
   Save, Check, Building2, Phone, Globe, Key, Sheet
@@ -25,39 +25,87 @@ const tabs = [
   { id: 'seguranca', label: 'Segurança', icon: Shield },
 ];
 
+const PERFIL_KEYS = ['escritorio', 'responsavel', 'email_contato', 'telefone', 'website', 'endereco', 'bio'];
+const REMETENTE_KEYS = ['remetente_nome', 'remetente_email', 'remetente_email_resposta', 'remetente_assinatura'];
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('perfil');
   const [saved, setSaved] = useState(false);
+  const queryClient = useQueryClient();
 
   const [perfil, setPerfil] = useState({
-    escritorio: 'Escritório Jurídico Dr. Marcos',
-    responsavel: 'Marcos',
-    email_contato: 'marcos@escritorio.adv.br',
-    telefone: '+55 11 99999-9999',
-    website: 'www.escritoriojuridico.adv.br',
-    endereco: 'São Paulo - SP',
-    bio: 'Especialistas em direito eleitoral e partidário. Atendemos partidos políticos em todo o Brasil com foco nas eleições 2026.',
+    escritorio: '', responsavel: '', email_contato: '',
+    telefone: '', website: '', endereco: '', bio: '',
   });
 
   const [remetente, setRemetente] = useState({
-    nome: 'Marcos - Escritório Jurídico',
-    email: 'marcos@escritorio.adv.br',
-    email_resposta: 'contato@escritorio.adv.br',
-    assinatura: 'Atenciosamente,\nDr. Marcos\nEspecialista em Direito Eleitoral\nOAB/SP 000.000',
+    nome: '', email: '', email_resposta: '', assinatura: '',
   });
 
   const [notifs, setNotifs] = useState({
-    email_aberto: true,
-    clique_link: true,
-    novo_lead: true,
-    atendimento_humano: true,
-    campanha_enviada: false,
-    resumo_diario: true,
+    email_aberto: true, clique_link: true, novo_lead: true,
+    atendimento_humano: true, campanha_enviada: false, resumo_diario: true,
+  });
+
+  const { data: settings = [] } = useQuery({
+    queryKey: ['app-settings-all'],
+    queryFn: () => base44.entities.AppSettings.list(),
+  });
+
+  // Populate fields from DB on load
+  useEffect(() => {
+    if (!settings.length) return;
+    const map = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
+    setPerfil(prev => ({
+      escritorio: map.escritorio || prev.escritorio,
+      responsavel: map.responsavel || prev.responsavel,
+      email_contato: map.email_contato || prev.email_contato,
+      telefone: map.telefone || prev.telefone,
+      website: map.website || prev.website,
+      endereco: map.endereco || prev.endereco,
+      bio: map.bio || prev.bio,
+    }));
+    setRemetente(prev => ({
+      nome: map.remetente_nome || prev.nome,
+      email: map.remetente_email || prev.email,
+      email_resposta: map.remetente_email_resposta || prev.email_resposta,
+      assinatura: map.remetente_assinatura || prev.assinatura,
+    }));
+  }, [settings]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (updates) => {
+      const existing = settings.reduce((acc, s) => { acc[s.key] = s; return acc; }, {});
+      await Promise.all(
+        Object.entries(updates).map(([key, value]) => {
+          if (existing[key]) return base44.entities.AppSettings.update(existing[key].id, { value });
+          return base44.entities.AppSettings.create({ key, value });
+        })
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['app-settings-all'] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    },
   });
 
   const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    if (activeTab === 'perfil') {
+      saveMutation.mutate({
+        escritorio: perfil.escritorio, responsavel: perfil.responsavel,
+        email_contato: perfil.email_contato, telefone: perfil.telefone,
+        website: perfil.website, endereco: perfil.endereco, bio: perfil.bio,
+      });
+    } else if (activeTab === 'remetente') {
+      saveMutation.mutate({
+        remetente_nome: remetente.nome, remetente_email: remetente.email,
+        remetente_email_resposta: remetente.email_resposta, remetente_assinatura: remetente.assinatura,
+      });
+    } else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    }
   };
 
   return (
@@ -248,11 +296,13 @@ export default function Settings() {
             </>
           )}
 
-          <div className="pt-2">
-            <Button onClick={handleSave} className="bg-navy text-white hover:bg-navy/90">
-              {saved ? <><Check size={13} className="mr-1.5 text-success" />Salvo!</> : <><Save size={13} className="mr-1.5" />Salvar Alterações</>}
-            </Button>
-          </div>
+          {['perfil', 'remetente', 'notificacoes'].includes(activeTab) && (
+            <div className="pt-2">
+              <Button onClick={handleSave} disabled={saveMutation.isPending} className="bg-navy text-white hover:bg-navy/90">
+                {saved ? <><Check size={13} className="mr-1.5 text-success" />Salvo!</> : <><Save size={13} className="mr-1.5" />Salvar Alterações</>}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

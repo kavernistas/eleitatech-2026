@@ -12,7 +12,13 @@ Deno.serve(async (req) => {
   const settings = await base44.asServiceRole.entities.AppSettings.list();
   const getSetting = (key) => (settings.find(s => s.key === key) || {}).value || Deno.env.get(key) || '';
 
-  const EVO_URL = getSetting('EVOLUTION_API_URL');
+  let EVO_URL = getSetting('EVOLUTION_API_URL');
+  // Garante que a URL tenha protocolo
+  if (EVO_URL && !EVO_URL.startsWith('http')) {
+    EVO_URL = 'http://' + EVO_URL;
+  }
+  // Remove barra no final
+  EVO_URL = EVO_URL.replace(/\/$/, '');
   const EVO_KEY = getSetting('EVOLUTION_API_KEY');
   const INSTANCE = getSetting('EVOLUTION_INSTANCE_NAME');
 

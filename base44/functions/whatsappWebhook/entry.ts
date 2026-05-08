@@ -1,7 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
-const EVO_URL = Deno.env.get("EVOLUTION_API_URL");
+let EVO_URL = Deno.env.get("EVOLUTION_API_URL") || '';
+if (EVO_URL && !EVO_URL.startsWith('http')) EVO_URL = 'http://' + EVO_URL;
+EVO_URL = EVO_URL.replace(/\/$/, '');
 const EVO_KEY = Deno.env.get("EVOLUTION_API_KEY");
 const INSTANCE = Deno.env.get("EVOLUTION_INSTANCE_NAME");
 
