@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -58,22 +58,16 @@ export default function ApiKeysSettings() {
   const { data: settings = [] } = useQuery({
     queryKey: ['app-settings-apikeys'],
     queryFn: () => base44.entities.AppSettings.list(),
-    onSuccess: (data) => {
-      const map = {};
-      data.forEach(s => { map[s.key] = s.value; });
-      setValues(map);
-    }
   });
 
-  // populate values when loaded
-  const allKeys = KEYS.flatMap(s => s.fields.map(f => f.key));
-  const initializedRef = useState(false);
-  if (!initializedRef[0] && settings.length > 0) {
-    initializedRef[0] = true;
-    const map = {};
-    settings.forEach(s => { if (allKeys.includes(s.key)) map[s.key] = s.value; });
-    // Only set if different to avoid loop - handled below via useQuery onSuccess
-  }
+  // Populate form when data loads
+  useEffect(() => {
+    if (settings.length > 0) {
+      const map = {};
+      settings.forEach(s => { map[s.key] = s.value; });
+      setValues(map);
+    }
+  }, [settings]);
 
   const mutation = useMutation({
     mutationFn: async (vals) => {
@@ -102,7 +96,6 @@ export default function ApiKeysSettings() {
       {KEYS.map(section => {
         const Icon = section.icon;
         const colorMap = { green: 'text-green-600', emerald: 'text-emerald-600' };
-        const bgMap = { green: 'bg-green-600/10 text-green-700', emerald: 'bg-emerald-600/10 text-emerald-700' };
 
         return (
           <div key={section.section} className="border border-border rounded-xl p-5 space-y-4">
