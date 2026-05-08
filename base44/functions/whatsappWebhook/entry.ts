@@ -163,6 +163,11 @@ Deno.serve(async (req) => {
     return Response.json({ ok: true });
   }
 
+  // ── LOAD SCHEDULING LINK FROM APP SETTINGS ──────────────────────────────────
+  const appSettings = await base44.asServiceRole.entities.AppSettings.list();
+  const schedulingLink = appSettings.find(s => s.key === 'scheduling_link')?.value || '';
+  const schedulingMsg = appSettings.find(s => s.key === 'scheduling_message')?.value || '';
+
   // ── PARALLEL: AI reply + intent analysis ────────────────────────────────────
   const historyForAI = conversation.slice(-10).map(m => ({
     role: m.role === "user" ? "user" : "assistant",
@@ -213,6 +218,19 @@ Deno.serve(async (req) => {
 
   // Send AI reply via WhatsApp
   await sendWhatsApp(senderPhone, cleanReply);
+
+  // ── AUTO SCHEDULING: send link when high intent & not yet in handover ────────
+  const isHighIntent = intentData.intent_score >= 7;
+  const notYetScheduled = !contact.tags?.includes('Agendamento_Enviado');
+  if (isHighIntent && schedulingLink && notYetScheduled && finalStatus !== 'atendimento_humano') {
+    const schedulingText = schedulingMsg
+      ? `${schedulingMsg}\n\n${schedulingLink}`
+      : `📅 *Reunião de Diagnóstico Gratuita*\n\nPercebo seu interesse! Que tal agendarmos uma conversa de 30 minutos com o Dr. Marcos Eduardo?\n\n👇 Escolha o melhor horário:\n${schedulingLink}`;
+    await sendWhatsApp(senderPhone, schedulingText);
+    // Tag contact so we don't send again
+    updateData.tags = [...new Set([...(updateData.tags || mergedTags), 'Agendamento_Enviado'])];
+    await base44.asServiceRole.entities.Contact.update(contact.id, { tags: updateData.tags });
+  }
 
   return Response.json({ ok: true });
 });

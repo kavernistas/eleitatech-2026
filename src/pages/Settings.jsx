@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import GoogleSheetsSync from '@/components/settings/GoogleSheetsSync';
 import SupabaseStatus from '@/components/settings/SupabaseStatus';
+import SchedulingLinkSettings from '@/components/settings/SchedulingLinkSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -160,6 +161,11 @@ export default function Settings() {
               <GoogleSheetsSync />
               <div className="border-t border-border pt-5 mt-5">
                 <SupabaseStatus />
+              </div>
+
+              {/* Scheduling Link */}
+              <div className="border-t border-border pt-5 mt-5">
+                <SchedulingLinkSettings />
               </div>
 
               {/* API OpenAI */}
