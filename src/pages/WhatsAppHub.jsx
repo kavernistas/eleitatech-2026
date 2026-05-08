@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import {
   Wifi, WifiOff, Loader2, QrCode, MessageSquare, User, Bot,
   AlertTriangle, Send, ChevronRight, Search, CheckCheck,
-  PhoneCall, RefreshCw, Info, FileText, Zap
+  PhoneCall, RefreshCw, Info, FileText, Zap, Plus, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -142,6 +142,59 @@ function SetupTab({ connectionStatus, qrBase64, connectedPhone, inboxContacts, u
   );
 }
 
+// ── New Conversation Modal ────────────────────────────────────────────────────
+function NewConversationModal({ contacts, onSelect, onClose }) {
+  const [q, setQ] = useState('');
+  const filtered = contacts.filter(c =>
+    c.phone && (
+      !q ||
+      c.name?.toLowerCase().includes(q.toLowerCase()) ||
+      c.party_name?.toLowerCase().includes(q.toLowerCase()) ||
+      c.phone?.includes(q)
+    )
+  );
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-xl">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <p className="font-semibold text-sm">Iniciar Nova Conversa</p>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
+        </div>
+        <div className="p-3 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={13} />
+            <Input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por nome, partido ou telefone..." className="pl-8 h-9 text-sm" />
+          </div>
+        </div>
+        <div className="max-h-80 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">
+              {q ? 'Nenhum contato encontrado' : 'Nenhum contato com telefone cadastrado'}
+            </div>
+          ) : filtered.map(c => (
+            <button
+              key={c.id}
+              onClick={() => { onSelect(c); onClose(); }}
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left border-b border-border/50 last:border-0"
+            >
+              <div className="w-9 h-9 rounded-full bg-navy/10 text-navy flex items-center justify-center font-bold text-sm flex-shrink-0">
+                {(c.name || c.email || '?').substring(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{c.name || c.email}</p>
+                <p className="text-xs text-muted-foreground truncate">{c.party_name} · {c.phone}</p>
+              </div>
+              <Badge variant="outline" className="text-[10px] flex-shrink-0">
+                {c.status?.replace(/_/g, ' ')}
+              </Badge>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function WhatsAppHub() {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
@@ -153,15 +206,32 @@ export default function WhatsAppHub() {
   const [replyText, setReplyText] = useState('');
   const [search, setSearch] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
+  const [showNewConv, setShowNewConv] = useState(false);
   const bottomRef = useRef(null);
   const pollRef = useRef(null);
   const qc = useQueryClient();
 
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts-wa'],
-    queryFn: () => base44.entities.Contact.list('-updated_date', 100),
+    queryFn: () => base44.entities.Contact.list('-updated_date', 200),
     refetchInterval: 8000,
   });
+
+  // Auto-check connection status on mount
+  useEffect(() => {
+    async function checkStatus() {
+      try {
+        const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
+        const state = res.data?.instance?.state;
+        if (state === 'open') {
+          setConnectionStatus('online');
+          const phone = res.data?.ownerJid?.replace('@s.whatsapp.net', '');
+          if (phone) setConnectedPhone(phone);
+        }
+      } catch {}
+    }
+    checkStatus();
+  }, []);
 
   const inboxContacts = contacts.filter(c =>
     c.status === 'atendimento_humano' || (c.whatsapp_conversation && c.whatsapp_conversation.length > 0)
@@ -173,7 +243,15 @@ export default function WhatsAppHub() {
     c.party_name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [selectedContact, selectedContact?.whatsapp_conversation]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [selectedContact?.id, selectedContact?.whatsapp_conversation?.length]);
+
+  // Keep selectedContact in sync with latest data from query
+  useEffect(() => {
+    if (selectedContact?.id) {
+      const updated = contacts.find(c => c.id === selectedContact.id);
+      if (updated) setSelectedContact(updated);
+    }
+  }, [contacts]);
 
   // Poll connection status while connecting
   useEffect(() => {
@@ -340,13 +418,38 @@ export default function WhatsAppHub() {
       {/* Inbox tab */}
       {activeTab === 'inbox' && (
         <div className="flex-1 flex overflow-hidden">
+          {/* New Conversation Modal */}
+          {showNewConv && (
+            <NewConversationModal
+              contacts={contacts}
+              onSelect={(c) => {
+                setSelectedContact(c);
+                // Add to inbox if not already there
+                if (!c.whatsapp_conversation?.length) {
+                  base44.entities.Contact.update(c.id, {
+                    whatsapp_conversation: c.whatsapp_conversation || [],
+                    status: c.status === 'novo' ? 'contato_feito' : c.status,
+                  }).then(() => qc.invalidateQueries({ queryKey: ['contacts-wa'] }));
+                }
+              }}
+              onClose={() => setShowNewConv(false)}
+            />
+          )}
+
           {/* Contact list */}
           <div className={`${selectedContact ? 'hidden lg:flex' : 'flex'} flex-col w-full lg:w-80 border-r border-border bg-card/30`}>
-            <div className="p-3 border-b border-border">
+            <div className="p-3 border-b border-border space-y-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" size={13} />
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="pl-8 h-8 text-sm" />
               </div>
+              <Button
+                size="sm"
+                onClick={() => setShowNewConv(true)}
+                className="w-full h-8 text-xs bg-[#25D366] hover:bg-[#1fb958] text-white gap-1.5"
+              >
+                <Plus size={13} /> Nova Conversa
+              </Button>
             </div>
 
             {urgentContacts.length > 0 && (
