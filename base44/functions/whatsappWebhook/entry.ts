@@ -19,14 +19,49 @@ encerre com: [HANDOVER_NEEDED] para transferir ao Marcos.
 Quando receber um documento, responda mencionando que o Marcos irá analisar pessoalmente.
 Limite suas respostas a 3-4 parágrafos curtos (WhatsApp).`;
 
-async function callOpenAI(messages) {
+const INTENT_PROMPT = `Analise a mensagem de WhatsApp de um lead de diretório partidário e retorne um JSON com:
+- "interest_area": um dos valores: "regularizacao_cnpj", "contas_2025", "ambos", "outros", "nenhum"
+- "intent_score": 0 a 10 (0=sem interesse, 10=quer contratar já)
+- "tags": array de strings relevantes (ex: ["Urgente", "CNPJ", "Contas 2025", "Pendência 2024"])
+- "suggested_status": um dos valores: "contato_feito", "interessado", "proposta_enviada", "atendimento_humano" (baseado no nível de interesse)
+
+Considere:
+- "interessado" quando o lead faz perguntas sobre preços, prazos, ou serviços específicos
+- "proposta_enviada" quando o lead pede formalmente uma proposta ou orçamento
+- "atendimento_humano" quando o lead quer falar com um humano ou demonstra urgência extrema
+- Tags "Urgente" se mencionar prazo ou urgência
+- Tags "CNPJ" se mencionar CNPJ, regularização, Receita Federal
+- Tags "Contas 2025" se mencionar prestação de contas, TSE, TRE, contabilidade
+
+Retorne APENAS o JSON, sem explicações.`;
+
+async function callOpenAI(messages, jsonMode = false) {
+  const body = {
+    model: "gpt-4o-mini",
+    messages,
+    max_tokens: jsonMode ? 300 : 500,
+  };
+  if (jsonMode) body.response_format = { type: "json_object" };
+
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_KEY}` },
-    body: JSON.stringify({ model: "gpt-4o-mini", messages, max_tokens: 500 }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   return data.choices?.[0]?.message?.content || "";
+}
+
+async function analyzeIntent(messageText) {
+  try {
+    const raw = await callOpenAI([
+      { role: "system", content: INTENT_PROMPT },
+      { role: "user", content: messageText },
+    ], true);
+    return JSON.parse(raw);
+  } catch {
+    return { interest_area: "nenhum", intent_score: 0, tags: [], suggested_status: "contato_feito" };
+  }
 }
 
 async function sendWhatsApp(phone, text) {
@@ -39,15 +74,41 @@ async function sendWhatsApp(phone, text) {
   });
 }
 
+// Try to find contact by multiple phone formats
+async function findContactByPhone(base44, phone) {
+  const normalized = phone.replace(/\D/g, "");
+  const withCountry = normalized.startsWith("55") ? normalized : `55${normalized}`;
+  const withoutCountry = withCountry.startsWith("55") ? withCountry.slice(2) : normalized;
+
+  // Try all variants
+  for (const variant of [withCountry, withoutCountry, normalized]) {
+    const results = await base44.asServiceRole.entities.Contact.filter({ phone: variant });
+    if (results?.[0]) return results[0];
+  }
+  return null;
+}
+
+// Determine new status based on intent analysis and current status
+function resolveStatus(currentStatus, suggestedStatus) {
+  const statusRank = {
+    novo: 0, contato_feito: 1, interessado: 2,
+    proposta_enviada: 3, fechado: 4, atendimento_humano: 5, inativo: -1,
+  };
+  const current = statusRank[currentStatus] ?? 0;
+  const suggested = statusRank[suggestedStatus] ?? 1;
+  // Only advance status, never downgrade (except handover)
+  if (suggestedStatus === "atendimento_humano") return "atendimento_humano";
+  return suggested > current ? suggestedStatus : currentStatus;
+}
+
 Deno.serve(async (req) => {
-  // Evolution API sends POST webhooks
   if (req.method !== "POST") return Response.json({ ok: true });
 
   const base44 = createClientFromRequest(req);
   let body;
   try { body = await req.json(); } catch { return Response.json({ ok: true }); }
 
-  // Evolution API webhook payload structure
+  // Evolution API webhook payload
   const event = body.event;
   if (event !== "messages.upsert") return Response.json({ ok: true });
 
@@ -61,11 +122,8 @@ Deno.serve(async (req) => {
 
   if (!senderPhone) return Response.json({ ok: true });
 
-  // Find contact in DB
-  const contacts = await base44.asServiceRole.entities.Contact.filter({ phone: senderPhone });
-  let contact = contacts?.[0] || null;
-
-  // If contact doesn't exist, create it
+  // Find or create contact
+  let contact = await findContactByPhone(base44, senderPhone);
   if (!contact) {
     contact = await base44.asServiceRole.entities.Contact.create({
       phone: senderPhone,
@@ -76,29 +134,28 @@ Deno.serve(async (req) => {
     });
   }
 
-  const conversation = contact.whatsapp_conversation || [];
+  const conversation = [...(contact.whatsapp_conversation || [])];
 
-  // Add incoming message to conversation
-  const incomingMsg = {
+  // Add incoming message to conversation history
+  conversation.push({
     role: "user",
-    content: hasMedia ? `[Documento recebido]` : messageText,
+    content: hasMedia ? "[Documento/Mídia recebida]" : messageText,
     ts: new Date().toISOString(),
-  };
-  conversation.push(incomingMsg);
+  });
 
-  // Handle media: tag contact
+  // ── MEDIA HANDLER ────────────────────────────────────────────────────────────
   if (hasMedia) {
-    const tags = [...(contact.tags || [])];
-    if (!tags.includes("Documento_Recebido")) tags.push("Documento_Recebido");
+    const tags = [...new Set([...(contact.tags || []), "Documento_Recebido"])];
     await base44.asServiceRole.entities.Contact.update(contact.id, {
       whatsapp_conversation: conversation,
       tags,
+      status: resolveStatus(contact.status, "interessado"),
     });
     await sendWhatsApp(senderPhone, "Recebemos seu documento! O Dr. Marcos Eduardo irá analisá-lo pessoalmente e retornará em breve. 📋");
     return Response.json({ ok: true });
   }
 
-  // If status is atendimento_humano, just save the message (Marcos handles it)
+  // ── HUMAN HANDOVER: just save message, Marcos handles ───────────────────────
   if (contact.status === "atendimento_humano") {
     await base44.asServiceRole.entities.Contact.update(contact.id, {
       whatsapp_conversation: conversation,
@@ -106,29 +163,50 @@ Deno.serve(async (req) => {
     return Response.json({ ok: true });
   }
 
-  // Build OpenAI messages from conversation history (last 10)
+  // ── PARALLEL: AI reply + intent analysis ────────────────────────────────────
   const historyForAI = conversation.slice(-10).map(m => ({
     role: m.role === "user" ? "user" : "assistant",
     content: m.content,
   }));
-  const aiMessages = [{ role: "system", content: SYSTEM_PROMPT }, ...historyForAI];
 
-  // Call AI
-  const aiReply = await callOpenAI(aiMessages);
+  const [aiReply, intentData] = await Promise.all([
+    callOpenAI([{ role: "system", content: SYSTEM_PROMPT }, ...historyForAI]),
+    analyzeIntent(messageText),
+  ]);
+
   const needsHandover = aiReply.includes("[HANDOVER_NEEDED]");
   const cleanReply = aiReply.replace("[HANDOVER_NEEDED]", "").trim();
 
   // Add AI reply to conversation
-  const aiMsg = { role: "assistant", content: cleanReply, ts: new Date().toISOString() };
-  conversation.push(aiMsg);
+  conversation.push({ role: "assistant", content: cleanReply, ts: new Date().toISOString() });
 
-  // Update contact
-  const updateData = { whatsapp_conversation: conversation };
-  if (needsHandover) {
-    updateData.status = "atendimento_humano";
-    updateData.ai_summary = `Lead solicitou atenção especial. Última mensagem: "${messageText.substring(0, 100)}"`;
-  } else if (contact.status === "novo") {
-    updateData.status = "contato_feito";
+  // ── MERGE TAGS (no duplicates) ───────────────────────────────────────────────
+  const existingTags = contact.tags || [];
+  const newTags = intentData.tags || [];
+  const mergedTags = [...new Set([...existingTags, ...newTags])];
+
+  // ── RESOLVE STATUS ───────────────────────────────────────────────────────────
+  const finalStatus = needsHandover
+    ? "atendimento_humano"
+    : resolveStatus(contact.status, intentData.suggested_status || "contato_feito");
+
+  // ── BUILD UPDATE PAYLOAD ─────────────────────────────────────────────────────
+  const updateData = {
+    whatsapp_conversation: conversation,
+    status: finalStatus,
+    tags: mergedTags,
+  };
+
+  // Update interest_area only if more specific than current
+  const interestRank = { nenhum: 0, outros: 1, regularizacao_cnpj: 2, contas_2025: 2, ambos: 3 };
+  const currentInterest = contact.interest_area || "nenhum";
+  if ((interestRank[intentData.interest_area] || 0) > (interestRank[currentInterest] || 0)) {
+    updateData.interest_area = intentData.interest_area;
+  }
+
+  // Generate AI summary when handing over or high intent
+  if (needsHandover || intentData.intent_score >= 7) {
+    updateData.ai_summary = `[Score: ${intentData.intent_score}/10] Interesse: ${intentData.interest_area}. Última msg: "${messageText.substring(0, 120)}"`;
   }
 
   await base44.asServiceRole.entities.Contact.update(contact.id, updateData);
