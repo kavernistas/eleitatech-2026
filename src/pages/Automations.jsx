@@ -20,6 +20,7 @@ const triggerLabels = {
 const actionLabels = {
   send_email: 'Enviar E-mail',
   send_sms: 'Enviar SMS',
+  send_whatsapp: 'Enviar WhatsApp',
   notify_crm: 'Notificar CRM',
   open_whatsapp_ai: 'Abrir Conversa IA no WhatsApp',
   change_status: 'Mudar Status do Lead',
@@ -37,7 +38,7 @@ const triggerColors = {
 const defaultAutomations = [
   { name: 'Boas-vindas Automático', trigger: 'cadastro_importacao', action: 'send_email', delay_hours: 0, active: true, executions_count: 423 },
   { name: 'Follow-up Diagnóstico', trigger: 'clique_diagnostico', action: 'notify_crm', delay_hours: 0, active: true, executions_count: 187 },
-  { name: 'SMS Remarketing', trigger: 'abandono_24h', action: 'send_sms', delay_hours: 24, active: true, executions_count: 94 },
+  { name: 'WhatsApp Reforço 24h', trigger: 'abandono_24h', action: 'send_whatsapp', delay_hours: 24, active: true, executions_count: 94 },
 ];
 
 export default function Automations() {
