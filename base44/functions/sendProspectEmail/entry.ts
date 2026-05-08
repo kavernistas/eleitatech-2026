@@ -94,12 +94,41 @@ Deno.serve(async (req) => {
     const tpl = TEMPLATES[templateId] || TEMPLATES['prospeccao_geral'];
     const subject = tpl.subject(contact);
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: contact.email,
-      subject,
-      body: buildHtml(contact, tpl),
-      from_name: 'Marcos Eduardo - Contador Partidário e Eleitoral',
+    // Send via Gmail API (allows external recipients)
+    const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+
+    const htmlBody = buildHtml(contact, tpl);
+
+    // Build RFC 2822 MIME message with proper UTF-8 encoding
+    const encodedSubject = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
+    const mimeMessage = [
+      `To: ${contact.email}`,
+      `Subject: ${encodedSubject}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset="UTF-8"',
+      'Content-Transfer-Encoding: base64',
+      '',
+      btoa(unescape(encodeURIComponent(htmlBody))),
+    ].join('\r\n');
+
+    // Gmail API requires web-safe base64 of the raw bytes
+    const encodedMessage = btoa(mimeMessage)
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw: encodedMessage }),
     });
+
+    if (!gmailRes.ok) {
+      const errData = await gmailRes.text();
+      console.error('Gmail API error status:', gmailRes.status, 'body:', errData);
+      throw new Error(`Gmail API error ${gmailRes.status}: ${errData}`);
+    }
 
     if (contact.id) {
       await base44.asServiceRole.entities.Contact.update(contact.id, {
