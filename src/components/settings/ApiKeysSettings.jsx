@@ -11,6 +11,7 @@ const KEYS = [
     { key: 'EVOLUTION_API_URL', label: 'URL da API', placeholder: 'http://legal-legis-evolution-api.f5rg2q.easypanel.host', type: 'text' },
     { key: 'EVOLUTION_API_KEY', label: 'Chave da API (AUTHENTICATION_API_KEY)', placeholder: 'sua-chave-evolution', type: 'password' },
     { key: 'EVOLUTION_INSTANCE_NAME', label: 'Nome da Instância', placeholder: 'eleitatech-principal', type: 'text' },
+    { key: 'N8N_WEBHOOK_URL', label: 'N8N Webhook URL (para envio de mensagens)', placeholder: 'https://legal-legis-n8n.f5rg2q.easypanel.host/webhook/...', type: 'text' },
   ]},
   { section: 'supabase', label: 'Supabase', icon: Database, color: 'emerald', fields: [
     { key: 'SUPABASE_URL', label: 'URL do Projeto', placeholder: 'https://xxxx.supabase.co', type: 'text' },
