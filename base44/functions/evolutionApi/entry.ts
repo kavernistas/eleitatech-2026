@@ -67,19 +67,6 @@ Deno.serve(async (req) => {
       const { phone, text } = payload;
       const normalized = phone.replace(/\D/g, "");
       const number = normalized.startsWith("55") ? normalized : `55${normalized}`;
-
-      const N8N_URL = getSetting('N8N_WEBHOOK_URL');
-      if (N8N_URL) {
-        const res = await fetch(N8N_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: number, message: text }),
-        });
-        const text2 = await res.text();
-        try { return Response.json(JSON.parse(text2)); } catch { return Response.json({ raw: text2 }); }
-      }
-
-      // Fallback: direct Evolution API
       const data = await evoFetch(`/message/sendText/${INSTANCE}`, "POST", { number, text });
       return Response.json(data);
     }

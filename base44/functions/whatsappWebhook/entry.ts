@@ -61,19 +61,9 @@ async function analyzeIntent(messageText) {
   }
 }
 
-async function sendWhatsApp(evoUrl, evoKey, instance, phone, text, n8nUrl) {
+async function sendWhatsApp(evoUrl, evoKey, instance, phone, text) {
   const normalized = phone.replace(/\D/g, "");
   const number = normalized.startsWith("55") ? normalized : `55${normalized}`;
-
-  if (n8nUrl) {
-    await fetch(n8nUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: number, message: text }),
-    });
-    return;
-  }
-
   await fetch(`${evoUrl}/message/sendText/${instance}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "apikey": evoKey },
@@ -128,7 +118,6 @@ Deno.serve(async (req) => {
   EVO_URL = EVO_URL.replace(/\/$/, '');
   const EVO_KEY = getSetting('EVOLUTION_API_KEY');
   const INSTANCE = getSetting('EVOLUTION_INSTANCE_NAME');
-  const N8N_URL = getSetting('N8N_WEBHOOK_URL');
   let body;
   try { body = await req.json(); } catch { return Response.json({ ok: true }); }
 
@@ -175,7 +164,7 @@ Deno.serve(async (req) => {
       tags,
       status: resolveStatus(contact.status, "interessado"),
     });
-    await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, "Recebemos seu documento! O Dr. Marcos Eduardo irá analisá-lo pessoalmente e retornará em breve. 📋", N8N_URL);
+    await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, "Recebemos seu documento! O Dr. Marcos Eduardo irá analisá-lo pessoalmente e retornará em breve. 📋");
     return Response.json({ ok: true });
   }
 
@@ -240,7 +229,7 @@ Deno.serve(async (req) => {
   await base44.asServiceRole.entities.Contact.update(contact.id, updateData);
 
   // Send AI reply via WhatsApp
-  await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, cleanReply, N8N_URL);
+  await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, cleanReply);
 
   // ── AUTO SCHEDULING: send link when high intent & not yet in handover ────────
   const isHighIntent = intentData.intent_score >= 7;
@@ -249,7 +238,7 @@ Deno.serve(async (req) => {
     const schedulingText = schedulingMsg
       ? `${schedulingMsg}\n\n${schedulingLink}`
       : `📅 *Reunião de Diagnóstico Gratuita*\n\nPercebo seu interesse! Que tal agendarmos uma conversa de 30 minutos com o Dr. Marcos Eduardo?\n\n👇 Escolha o melhor horário:\n${schedulingLink}`;
-    await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, schedulingText, N8N_URL);
+    await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, schedulingText);
     // Tag contact so we don't send again
     updateData.tags = [...new Set([...(updateData.tags || mergedTags), 'Agendamento_Enviado'])];
     await base44.asServiceRole.entities.Contact.update(contact.id, { tags: updateData.tags });
