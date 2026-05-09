@@ -188,7 +188,27 @@ export default function WhatsAppHub() {
     refetchInterval: 8000,
   });
 
+  const handleCheckConnection = async () => {
+    setIsChecking(true);
+    setConnectionStatus('checking');
+    try {
+      const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
+      const state = res.data?.instance?.state;
+      if (state === 'open') {
+        setConnectionStatus('online');
+        const phone = res.data?.instance?.ownerJid?.replace('@s.whatsapp.net', '') || res.data?.ownerJid?.replace('@s.whatsapp.net', '');
+        if (phone) setConnectedPhone(phone);
+      } else {
+        setConnectionStatus('disconnected');
+      }
+    } catch {
+      setConnectionStatus('disconnected');
+    }
+    setIsChecking(false);
+  };
+
   // Auto-check connection status on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { handleCheckConnection(); }, []);
 
   const inboxContacts = contacts.filter(c =>
@@ -210,25 +230,6 @@ export default function WhatsAppHub() {
       if (updated) setSelectedContact(updated);
     }
   }, [contacts]);
-
-  const handleCheckConnection = async () => {
-    setIsChecking(true);
-    setConnectionStatus('checking');
-    try {
-      const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
-      const state = res.data?.instance?.state;
-      if (state === 'open') {
-        setConnectionStatus('online');
-        const phone = res.data?.instance?.ownerJid?.replace('@s.whatsapp.net', '') || res.data?.ownerJid?.replace('@s.whatsapp.net', '');
-        if (phone) setConnectedPhone(phone);
-      } else {
-        setConnectionStatus('disconnected');
-      }
-    } catch {
-      setConnectionStatus('disconnected');
-    }
-    setIsChecking(false);
-  };
 
   const handleAssumirConversa = async () => {
     if (!selectedContact?.id) return;
