@@ -16,7 +16,7 @@ async function getSettings(base44) {
     evoUrl: get('EVOLUTION_API_URL'),
     evoKey: get('EVOLUTION_API_KEY'),
     evoInstance: get('EVOLUTION_INSTANCE_NAME'),
-    webhookSecret: get('LEAD_WEBHOOK_SECRET'),
+    webhookSecret: get('WEBHOOK_SECRET'),
     schedulingLink: get('scheduling_link'),
     schedulingMsg: get('scheduling_message'),
   };
@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  // External webhook — use createClientFromRequest, access entities via asServiceRole only
   const base44 = createClientFromRequest(req);
   const cfg = await getSettings(base44);
 

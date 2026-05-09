@@ -1,11 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
-let EVO_URL = Deno.env.get("EVOLUTION_API_URL") || '';
-if (EVO_URL && !EVO_URL.startsWith('http')) EVO_URL = 'http://' + EVO_URL;
-EVO_URL = EVO_URL.replace(/\/$/, '');
-const EVO_KEY = Deno.env.get("EVOLUTION_API_KEY");
-const INSTANCE = Deno.env.get("EVOLUTION_INSTANCE_NAME");
 
 const SYSTEM_PROMPT = `Você é um assistente jurídico especializado em direito eleitoral e partidário brasileiro, 
 representando o escritório do Dr. Marcos Eduardo. 
@@ -66,12 +61,12 @@ async function analyzeIntent(messageText) {
   }
 }
 
-async function sendWhatsApp(phone, text) {
+async function sendWhatsApp(evoUrl, evoKey, instance, phone, text) {
   const normalized = phone.replace(/\D/g, "");
   const number = normalized.startsWith("55") ? normalized : `55${normalized}`;
-  await fetch(`${EVO_URL}/message/sendText/${INSTANCE}`, {
+  await fetch(`${evoUrl}/message/sendText/${instance}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "apikey": EVO_KEY },
+    headers: { "Content-Type": "application/json", "apikey": evoKey },
     body: JSON.stringify({ number, text }),
   });
 }
@@ -112,7 +107,17 @@ Deno.serve(async (req) => {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // External webhook — use createClientFromRequest, access via asServiceRole only
   const base44 = createClientFromRequest(req);
+
+  // Load Evolution API config from AppSettings (fallback to env vars)
+  const appSettingsAll = await base44.asServiceRole.entities.AppSettings.list();
+  const getSetting = (key) => (appSettingsAll.find(s => s.key === key) || {}).value || Deno.env.get(key) || '';
+  let EVO_URL = getSetting('EVOLUTION_API_URL');
+  if (EVO_URL && !EVO_URL.startsWith('http')) EVO_URL = 'http://' + EVO_URL;
+  EVO_URL = EVO_URL.replace(/\/$/, '');
+  const EVO_KEY = getSetting('EVOLUTION_API_KEY');
+  const INSTANCE = getSetting('EVOLUTION_INSTANCE_NAME');
   let body;
   try { body = await req.json(); } catch { return Response.json({ ok: true }); }
 
@@ -159,7 +164,7 @@ Deno.serve(async (req) => {
       tags,
       status: resolveStatus(contact.status, "interessado"),
     });
-    await sendWhatsApp(senderPhone, "Recebemos seu documento! O Dr. Marcos Eduardo irá analisá-lo pessoalmente e retornará em breve. 📋");
+    await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, "Recebemos seu documento! O Dr. Marcos Eduardo irá analisá-lo pessoalmente e retornará em breve. 📋");
     return Response.json({ ok: true });
   }
 
@@ -171,10 +176,9 @@ Deno.serve(async (req) => {
     return Response.json({ ok: true });
   }
 
-  // ── LOAD SCHEDULING LINK FROM APP SETTINGS ──────────────────────────────────
-  const appSettings = await base44.asServiceRole.entities.AppSettings.list();
-  const schedulingLink = appSettings.find(s => s.key === 'scheduling_link')?.value || '';
-  const schedulingMsg = appSettings.find(s => s.key === 'scheduling_message')?.value || '';
+  // ── LOAD SCHEDULING LINK FROM APP SETTINGS (already loaded above) ────────────
+  const schedulingLink = appSettingsAll.find(s => s.key === 'scheduling_link')?.value || '';
+  const schedulingMsg = appSettingsAll.find(s => s.key === 'scheduling_message')?.value || '';
 
   // ── PARALLEL: AI reply + intent analysis ────────────────────────────────────
   const historyForAI = conversation.slice(-10).map(m => ({
@@ -225,7 +229,7 @@ Deno.serve(async (req) => {
   await base44.asServiceRole.entities.Contact.update(contact.id, updateData);
 
   // Send AI reply via WhatsApp
-  await sendWhatsApp(senderPhone, cleanReply);
+  await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, cleanReply);
 
   // ── AUTO SCHEDULING: send link when high intent & not yet in handover ────────
   const isHighIntent = intentData.intent_score >= 7;
@@ -234,7 +238,7 @@ Deno.serve(async (req) => {
     const schedulingText = schedulingMsg
       ? `${schedulingMsg}\n\n${schedulingLink}`
       : `📅 *Reunião de Diagnóstico Gratuita*\n\nPercebo seu interesse! Que tal agendarmos uma conversa de 30 minutos com o Dr. Marcos Eduardo?\n\n👇 Escolha o melhor horário:\n${schedulingLink}`;
-    await sendWhatsApp(senderPhone, schedulingText);
+    await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, schedulingText);
     // Tag contact so we don't send again
     updateData.tags = [...new Set([...(updateData.tags || mergedTags), 'Agendamento_Enviado'])];
     await base44.asServiceRole.entities.Contact.update(contact.id, { tags: updateData.tags });
