@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
-  Wifi, WifiOff, Loader2, QrCode, MessageSquare, User, Bot,
+  Wifi, WifiOff, Loader2, MessageSquare, User, Bot,
   AlertTriangle, Send, ChevronRight, Search, CheckCheck,
   PhoneCall, RefreshCw, Info, FileText, Zap, Plus, X
 } from 'lucide-react';
@@ -14,39 +14,24 @@ import { ptBR } from 'date-fns/locale';
 
 const HANDOVER_MSG = 'Olá! Sou o Marcos Eduardo. Vou assumir o atendimento pessoalmente para finalizarmos a sua regularização. 🤝';
 
-// ── QR Code Display ──────────────────────────────────────────────────────────
-function QrCodeDisplay({ status, qrBase64, connectedPhone }) {
+// ── Connection Status Display ────────────────────────────────────────────────
+function ConnectionDisplay({ status, connectedPhone }) {
   if (status === 'online') {
     return (
       <div className="flex flex-col items-center gap-3 py-6">
         <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center">
           <Wifi className="w-8 h-8 text-success" />
         </div>
-        <p className="text-sm font-semibold text-success">WhatsApp Conectado</p>
+        <p className="text-sm font-semibold text-success">Evolution API Conectada</p>
         {connectedPhone && <p className="text-xs text-muted-foreground">+{connectedPhone} · Online</p>}
       </div>
     );
   }
-  if (status === 'connecting' && qrBase64) {
-    return (
-      <div className="flex flex-col items-center gap-3 py-6">
-        <img
-          src={`data:image/png;base64,${qrBase64}`}
-          alt="QR Code WhatsApp"
-          className="w-44 h-44 rounded-lg border-2 border-border"
-        />
-        <p className="text-sm font-semibold text-warning">Escaneie com o WhatsApp</p>
-        <p className="text-xs text-muted-foreground text-center max-w-[200px]">
-          WhatsApp → Aparelhos conectados → Conectar aparelho
-        </p>
-      </div>
-    );
-  }
-  if (status === 'connecting') {
+  if (status === 'checking') {
     return (
       <div className="flex flex-col items-center gap-3 py-6">
         <Loader2 className="w-10 h-10 text-navy animate-spin" />
-        <p className="text-sm font-semibold text-warning">Gerando QR Code...</p>
+        <p className="text-sm font-semibold text-warning">Verificando conexão...</p>
       </div>
     );
   }
@@ -55,43 +40,26 @@ function QrCodeDisplay({ status, qrBase64, connectedPhone }) {
       <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
         <WifiOff className="w-8 h-8 text-destructive" />
       </div>
-      <p className="text-sm font-semibold text-destructive">Desconectado</p>
-      <p className="text-xs text-muted-foreground">Clique em "Conectar" para gerar o QR Code</p>
+      <p className="text-sm font-semibold text-destructive">Não conectado à Evolution API</p>
+      <p className="text-xs text-muted-foreground text-center max-w-[220px]">Verifique as configurações da API e clique em "Verificar Conexão"</p>
     </div>
   );
 }
 
 // ── Setup tab: configurações da instância ────────────────────────────────────
-function SetupTab({ connectionStatus, qrBase64, connectedPhone, inboxContacts, urgentContacts, contacts, onConnect, onDisconnect, onRefreshQr, isConnecting }) {
+function SetupTab({ connectionStatus, connectedPhone, inboxContacts, urgentContacts, contacts, onCheck, isChecking }) {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="max-w-2xl mx-auto space-y-4">
         {/* Connection card */}
         <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center gap-4">
           <h2 className="text-sm font-semibold text-foreground self-start">Instância WhatsApp (Evolution API)</h2>
-          <QrCodeDisplay status={connectionStatus} qrBase64={qrBase64} connectedPhone={connectedPhone} />
+          <ConnectionDisplay status={connectionStatus} connectedPhone={connectedPhone} />
           <div className="flex gap-3">
-            {connectionStatus === 'disconnected' && (
-              <Button onClick={onConnect} disabled={isConnecting} className="bg-[#25D366] hover:bg-[#1fb958] text-white gap-2">
-                {isConnecting ? <Loader2 size={16} className="animate-spin" /> : <QrCode size={16} />}
-                Conectar WhatsApp
-              </Button>
-            )}
-            {connectionStatus === 'connecting' && (
-              <div className="flex gap-2">
-                <Button onClick={onRefreshQr} variant="outline" className="gap-2">
-                  <RefreshCw size={16} /> Atualizar QR Code
-                </Button>
-                <Button variant="outline" onClick={onDisconnect} className="gap-2 text-destructive border-destructive/30">
-                  <X size={16} /> Cancelar
-                </Button>
-              </div>
-            )}
-            {connectionStatus === 'online' && (
-              <Button variant="outline" onClick={onDisconnect} className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5">
-                <WifiOff size={16} /> Desconectar
-              </Button>
-            )}
+            <Button onClick={onCheck} disabled={isChecking} className="bg-navy hover:bg-navy/90 text-white gap-2">
+              {isChecking ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+              Verificar Conexão
+            </Button>
           </div>
         </div>
 
@@ -203,9 +171,8 @@ function NewConversationModal({ contacts, onSelect, onClose }) {
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function WhatsAppHub() {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
-  const [qrBase64, setQrBase64] = useState(null);
   const [connectedPhone, setConnectedPhone] = useState(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const [activeTab, setActiveTab] = useState('inbox');
   const [selectedContact, setSelectedContact] = useState(null);
   const [replyText, setReplyText] = useState('');
@@ -213,7 +180,6 @@ export default function WhatsAppHub() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const [showNewConv, setShowNewConv] = useState(false);
   const bottomRef = useRef(null);
-  const pollRef = useRef(null);
   const qc = useQueryClient();
 
   const { data: contacts = [] } = useQuery({
@@ -223,20 +189,7 @@ export default function WhatsAppHub() {
   });
 
   // Auto-check connection status on mount
-  useEffect(() => {
-    async function checkStatus() {
-      try {
-        const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
-        const state = res.data?.instance?.state;
-        if (state === 'open') {
-          setConnectionStatus('online');
-          const phone = res.data?.ownerJid?.replace('@s.whatsapp.net', '');
-          if (phone) setConnectedPhone(phone);
-        }
-      } catch {}
-    }
-    checkStatus();
-  }, []);
+  useEffect(() => { handleCheckConnection(); }, []);
 
   const inboxContacts = contacts.filter(c =>
     c.status === 'atendimento_humano' || (c.whatsapp_conversation && c.whatsapp_conversation.length > 0)
@@ -258,93 +211,23 @@ export default function WhatsAppHub() {
     }
   }, [contacts]);
 
-  // Poll connection status while connecting
-  useEffect(() => {
-    if (connectionStatus === 'connecting') {
-      pollRef.current = setInterval(async () => {
-        try {
-          const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
-          const state = res.data?.instance?.state;
-          if (state === 'open') {
-            clearInterval(pollRef.current);
-            setConnectionStatus('online');
-            setQrBase64(null);
-            const phone = res.data?.instance?.profilePictureUrl ? '' : res.data?.ownerJid?.replace('@s.whatsapp.net', '');
-            if (phone) setConnectedPhone(phone);
-          } else if (state === 'close') {
-            // Still waiting — try refreshing QR
-            try {
-              const qrRes = await base44.functions.invoke('evolutionApi', { action: 'getQrCode' });
-              if (qrRes.data?.base64) setQrBase64(qrRes.data.base64);
-            } catch {}
-          }
-        } catch {}
-      }, 5000);
-    }
-    return () => clearInterval(pollRef.current);
-  }, [connectionStatus]);
-
-  const handleConnect = async () => {
-    setIsConnecting(true);
-    setQrBase64(null);
-    setConnectionStatus('connecting');
-
-    // 1. Tenta criar a instância (ignora erro se já existir)
+  const handleCheckConnection = async () => {
+    setIsChecking(true);
+    setConnectionStatus('checking');
     try {
-      await base44.functions.invoke('evolutionApi', { action: 'createInstance' });
-    } catch {}
-
-    // 2. Aguarda um pouco para a instância inicializar
-    await new Promise(r => setTimeout(r, 2000));
-
-    // 3. Busca QR Code com até 3 tentativas
-    let gotQr = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const res = await base44.functions.invoke('evolutionApi', { action: 'getQrCode' });
-        if (res.data?.base64) {
-          setQrBase64(res.data.base64);
-          gotQr = true;
-          break;
-        } else if (res.data?.instance?.state === 'open') {
-          setConnectionStatus('online');
-          setIsConnecting(false);
-          return;
-        }
-      } catch {}
-      await new Promise(r => setTimeout(r, 2000));
-    }
-
-    if (!gotQr) {
-      // Fallback: verifica se já está conectado
-      try {
-        const statusRes = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
-        if (statusRes.data?.instance?.state === 'open') {
-          setConnectionStatus('online');
-        } else {
-          setConnectionStatus('disconnected');
-        }
-      } catch {
+      const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
+      const state = res.data?.instance?.state;
+      if (state === 'open') {
+        setConnectionStatus('online');
+        const phone = res.data?.instance?.ownerJid?.replace('@s.whatsapp.net', '') || res.data?.ownerJid?.replace('@s.whatsapp.net', '');
+        if (phone) setConnectedPhone(phone);
+      } else {
         setConnectionStatus('disconnected');
       }
+    } catch {
+      setConnectionStatus('disconnected');
     }
-
-    setIsConnecting(false);
-  };
-
-  const handleRefreshQr = async () => {
-    try {
-      const res = await base44.functions.invoke('evolutionApi', { action: 'getQrCode' });
-      if (res.data?.base64) setQrBase64(res.data.base64);
-    } catch {}
-  };
-
-  const handleDisconnect = async () => {
-    clearInterval(pollRef.current);
-    try { await base44.functions.invoke('evolutionApi', { action: 'disconnect' }); } catch {}
-    setConnectionStatus('disconnected');
-    setQrBase64(null);
-    setConnectedPhone(null);
+    setIsChecking(false);
   };
 
   const handleAssumirConversa = async () => {
@@ -401,9 +284,9 @@ export default function WhatsAppHub() {
   };
 
   const conversation = selectedContact?.whatsapp_conversation || [];
-  const statusColor = { disconnected: 'text-destructive', connecting: 'text-warning', online: 'text-success' };
-  const statusLabel = { disconnected: 'Desconectado', connecting: 'Aguardando QR...', online: 'Online' };
-  const statusDot = { disconnected: 'bg-destructive', connecting: 'bg-warning animate-pulse', online: 'bg-success animate-pulse' };
+  const statusColor = { disconnected: 'text-destructive', checking: 'text-warning', online: 'text-success' };
+  const statusLabel = { disconnected: 'Desconectado', checking: 'Verificando...', online: 'Online' };
+  const statusDot = { disconnected: 'bg-destructive', checking: 'bg-warning animate-pulse', online: 'bg-success animate-pulse' };
 
   return (
     <div className="h-full flex flex-col animate-fade-in overflow-hidden">
@@ -443,15 +326,12 @@ export default function WhatsAppHub() {
       {activeTab === 'setup' && (
         <SetupTab
           connectionStatus={connectionStatus}
-          qrBase64={qrBase64}
           connectedPhone={connectedPhone}
           inboxContacts={inboxContacts}
           urgentContacts={urgentContacts}
           contacts={contacts}
-          onConnect={handleConnect}
-          onDisconnect={handleDisconnect}
-          onRefreshQr={handleRefreshQr}
-          isConnecting={isConnecting}
+          onCheck={handleCheckConnection}
+          isChecking={isChecking}
         />
       )}
 
