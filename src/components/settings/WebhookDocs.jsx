@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { appParams } from '@/lib/app-params';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Webhook, Copy, Check, Eye, EyeOff, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -69,7 +70,7 @@ export default function WebhookDocs() {
   });
 
   // Build the actual function URLs from base44 client
-  const appId = window.location.hostname.split('--')[1]?.split('.')[0] || '';
+  const appId = appParams.appId || '';
   const functionUrl = `https://backend.base44.app/api/apps/${appId}/functions/leadWebhook`;
   const whatsappWebhookUrl = `https://backend.base44.app/api/apps/${appId}/functions/whatsappWebhook`;
 
