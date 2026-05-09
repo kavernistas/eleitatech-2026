@@ -68,9 +68,10 @@ export default function WebhookDocs() {
     }
   });
 
-  // Build the actual function URL from base44 client
+  // Build the actual function URLs from base44 client
   const appId = window.location.hostname.split('--')[1]?.split('.')[0] || '';
   const functionUrl = `https://backend.base44.app/api/apps/${appId}/functions/leadWebhook`;
+  const whatsappWebhookUrl = `https://backend.base44.app/api/apps/${appId}/functions/whatsappWebhook`;
 
   const examplePayload = JSON.stringify({
     name: "João Silva",
@@ -179,6 +180,33 @@ export default function WebhookDocs() {
           <li>Cole a URL acima e adicione o header <code className="bg-muted px-1 rounded">x-webhook-secret</code></li>
           <li>Certifique-se de ter campos com <strong>"nome"</strong>, <strong>"telefone/whatsapp"</strong> e <strong>"e-mail"</strong> no título</li>
           <li>Ative o webhook e teste com um envio de teste</li>
+        </ol>
+      </div>
+
+      {/* Evolution API Webhook */}
+      <div className="border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 rounded-lg p-3 space-y-2">
+        <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+          ⚡ Webhook da Evolution API (WhatsApp)
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Para que as mensagens recebidas no WhatsApp sejam processadas pelo assistente de IA, configure o webhook na Evolution API com a URL abaixo — <strong>diferente</strong> do webhook de captação de leads.
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+          <Input
+            readOnly
+            value={whatsappWebhookUrl}
+            className="h-9 text-xs font-mono bg-muted"
+          />
+          <CopyButton text={whatsappWebhookUrl} />
+          <a href={whatsappWebhookUrl} target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={14} className="text-muted-foreground hover:text-foreground" />
+          </a>
+        </div>
+        <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside mt-2">
+          <li>Acesse a Evolution API → sua instância → <strong>Events → Webhook</strong></li>
+          <li>Cole a URL acima no campo <strong>URL</strong></li>
+          <li>Ative o evento <strong>messages.upsert</strong></li>
+          <li>Adicione o header <code className="bg-muted px-1 rounded">x-webhook-secret: SEU_SECRET</code> se configurado</li>
         </ol>
       </div>
     </div>
