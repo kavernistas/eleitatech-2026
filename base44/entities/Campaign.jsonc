@@ -35,6 +35,10 @@
       "type": "string",
       "description": "Conte\u00fado HTML do e-mail"
     },
+    "blocks_json": {
+      "type": "string",
+      "description": "JSON serializado dos blocos do editor"
+    },
     "preview_text": {
       "type": "string"
     },
@@ -98,7 +102,7 @@
     },
     "sender_name": {
       "type": "string",
-      "default": "Marcos - Escrit\u00f3rio Jur\u00eddico"
+      "default": "Marcos Eduardo - Contador Partid\u00e1rio e Eleitoral"
     },
     "sender_email": {
       "type": "string"

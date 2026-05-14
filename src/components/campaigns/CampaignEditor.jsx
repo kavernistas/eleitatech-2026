@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
@@ -49,7 +50,12 @@ export default function CampaignEditor({ campaign, onBack }) {
   const [subject, setSubject] = useState(campaign?.subject_a || '');
   const [previewText, setPreviewText] = useState(campaign?.preview_text || '');
   const [senderName, setSenderName] = useState(campaign?.sender_name || 'Marcos Eduardo - Contador Partidário e Eleitoral');
-  const [blocks, setBlocks] = useState(initBlocks);
+  const [blocks, setBlocks] = useState(() => {
+    if (campaign?.blocks_json) {
+      try { return JSON.parse(campaign.blocks_json); } catch { /* fall through */ }
+    }
+    return initBlocks;
+  });
   const [showPreview, setShowPreview] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiTone, setAiTone] = useState('formal');
@@ -68,7 +74,14 @@ export default function CampaignEditor({ campaign, onBack }) {
     mutationFn: (data) => campaign
       ? base44.entities.Campaign.update(campaign.id, data)
       : base44.entities.Campaign.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaigns'] }); onBack(); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      toast.success('Campanha salva com sucesso!');
+      onBack();
+    },
+    onError: (err) => {
+      toast.error('Erro ao salvar campanha: ' + (err?.message || 'Tente novamente.'));
+    },
   });
 
   const addBlock = (type) => {
@@ -162,7 +175,8 @@ ${bodyText}`,
   const handleSave = () => {
     const payload = {
       name, subject_a: subject, preview_text: previewText,
-      sender_name: senderName, html_body: buildHtml(), type: 'email_marketing',
+      sender_name: senderName, html_body: buildHtml(),
+      blocks_json: JSON.stringify(blocks), type: 'email_marketing',
     };
     if (scheduleMode && scheduledAt) {
       payload.status = 'agendado';
