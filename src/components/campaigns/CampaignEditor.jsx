@@ -48,7 +48,7 @@ export default function CampaignEditor({ campaign, onBack }) {
   const [name, setName] = useState(campaign?.name || '');
   const [subject, setSubject] = useState(campaign?.subject_a || '');
   const [previewText, setPreviewText] = useState(campaign?.preview_text || '');
-  const [senderName, setSenderName] = useState(campaign?.sender_name || 'Marcos - Escritório Jurídico');
+  const [senderName, setSenderName] = useState(campaign?.sender_name || 'Marcos Eduardo - Contador Partidário e Eleitoral');
   const [blocks, setBlocks] = useState(initBlocks);
   const [showPreview, setShowPreview] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
