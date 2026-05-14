@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Zap, Play, Pause, Trash2, Clock, ArrowRight } from 'lucide-react';
+import { Plus, Zap, Play, Pause, Trash2, Clock, ArrowRight, Webhook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import LeadWebhookAutomation from '@/components/automations/LeadWebhookAutomation';
 
 const triggerLabels = {
   cadastro_importacao: 'Cadastro ou Importação',
@@ -150,6 +151,15 @@ export default function Automations() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Webhook Lead Automations ─────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-5 pb-4 border-b border-border">
+          <Webhook size={15} className="text-navy" />
+          <h2 className="font-semibold text-foreground">Campanhas Automáticas por Lead Webhook</h2>
+        </div>
+        <LeadWebhookAutomation />
       </div>
 
       {/* New automation dialog */}

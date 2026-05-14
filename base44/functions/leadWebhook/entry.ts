@@ -217,11 +217,68 @@ Qual é a principal necessidade do seu diretório hoje?`;
     }
   }
 
+  // ── Fire lead automation rules ────────────────────────────────────────────
+  let campaignsFired = [];
+  try {
+    const rules = await base44.asServiceRole.entities.LeadAutomationRule.filter({ active: true });
+    const matchingRules = rules.filter(rule => {
+      // Trigger check
+      if (rule.trigger === 'new_lead_with_email' && !contact.email) return false;
+      if (rule.trigger === 'new_lead_with_phone' && !normalizePhone(contact.phone)) return false;
+      // State filter
+      if (rule.filter_state && contact.state && contact.state.toUpperCase() !== rule.filter_state.toUpperCase()) return false;
+      return true;
+    });
+
+    for (const rule of matchingRules) {
+      const campaign = await base44.asServiceRole.entities.Campaign.get(rule.campaign_id).catch(() => null);
+      if (!campaign || !campaign.html_body || !contact.email) continue;
+
+      // Send once per contact check: use tags
+      const sentTag = `CampanhaEnviada_${rule.campaign_id}`;
+      if (rule.send_once_per_contact && contact.tags?.includes(sentTag)) continue;
+
+      // Personalize and send email
+      const personalize = (html) => html
+        .replace(/\{\{nome_responsavel\}\}/g, contact.name || 'Prezado(a)')
+        .replace(/\{\{nome_partido\}\}/g, contact.party_name || '')
+        .replace(/\{\{sigla_partido\}\}/g, contact.party_acronym || '')
+        .replace(/\{\{cidade\}\}/g, contact.city || '')
+        .replace(/\{\{estado\}\}/g, contact.state || '');
+
+      const subject = campaign.subject_a || 'Mensagem importante sobre seu partido';
+      const senderName = campaign.sender_name || 'Marcos Eduardo - Contador Partidário e Eleitoral';
+
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: contact.email,
+        subject: personalize(subject),
+        body: personalize(campaign.html_body),
+        from_name: senderName,
+      });
+
+      // Update rule execution count
+      await base44.asServiceRole.entities.LeadAutomationRule.update(rule.id, {
+        executions_count: (rule.executions_count || 0) + 1,
+        last_executed: new Date().toISOString(),
+      });
+
+      // Tag contact as sent
+      const updatedTags = [...new Set([...(contact.tags || []), sentTag, 'Email_Automacao_Enviado'])];
+      await base44.asServiceRole.entities.Contact.update(contact.id, { tags: updatedTags });
+      contact = { ...contact, tags: updatedTags };
+
+      campaignsFired.push(campaign.name);
+    }
+  } catch (automationErr) {
+    console.error('Automation error:', automationErr.message);
+  }
+
   return Response.json({
     ok: true,
     contact_id: contact.id,
     whatsapp_sent: whatsappSent,
     whatsapp_error: whatsappError,
     phone_used: phone,
+    campaigns_fired: campaignsFired,
   });
 });
