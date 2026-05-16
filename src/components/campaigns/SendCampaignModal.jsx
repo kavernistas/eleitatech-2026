@@ -109,12 +109,30 @@ export default function SendCampaignModal({ campaign, onClose }) {
     setSelectedIds(null);
   };
 
+  const [sentCount, setSentCount] = useState(0);
+
   const handleSend = async () => {
     setStep('sending');
-    await new Promise(r => setTimeout(r, 1800));
+    setSentCount(0);
+
+    let sent = 0;
+    for (const contact of recipients) {
+      try {
+        await base44.functions.invoke('sendProspectEmail', {
+          contact,
+          subject: campaign.subject_a || campaign.name,
+          html_body: campaign.html_body,
+        });
+        sent++;
+        setSentCount(sent);
+      } catch (err) {
+        console.error('Erro ao enviar para', contact.email, err.message);
+      }
+    }
+
     await updateCampaignMutation.mutateAsync({
       status: 'enviado',
-      total_sent: recipients.length,
+      total_sent: sent,
       total_opened: 0,
       total_clicked: 0,
       sent_at: new Date().toISOString(),
@@ -301,7 +319,9 @@ export default function SendCampaignModal({ campaign, onClose }) {
             </div>
             <div className="text-center">
               <p className="font-semibold">Enviando campanha...</p>
-              <p className="text-sm text-muted-foreground mt-1">Processando {recipients.length.toLocaleString('pt-BR')} e-mails</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {sentCount} de {recipients.length} e-mails enviados
+              </p>
             </div>
           </div>
         )}

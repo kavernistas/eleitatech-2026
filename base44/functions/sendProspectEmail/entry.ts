@@ -93,13 +93,26 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'email_invalid' });
     }
 
-    const tpl = TEMPLATES[templateId] || TEMPLATES['prospeccao_geral'];
-    const subject = tpl.subject(contact);
+    // If html_body and subject are passed directly (from campaign send), use them
+    // Otherwise fall back to built-in templates
+    let subject, htmlBody;
+    if (body.html_body && body.subject) {
+      const personalize = (str) => (str || '')
+        .replace(/\{\{nome_responsavel\}\}/g, contact.name || 'Prezado(a)')
+        .replace(/\{\{nome_partido\}\}/g, contact.party_name || '')
+        .replace(/\{\{sigla_partido\}\}/g, contact.party_acronym || '')
+        .replace(/\{\{cidade\}\}/g, contact.city || '')
+        .replace(/\{\{estado\}\}/g, contact.state || '');
+      subject = personalize(body.subject);
+      htmlBody = personalize(body.html_body);
+    } else {
+      const tpl = TEMPLATES[templateId] || TEMPLATES['prospeccao_geral'];
+      subject = tpl.subject(contact);
+      htmlBody = buildHtml(contact, tpl);
+    }
 
     // Send via Gmail API (allows external recipients)
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
-
-    const htmlBody = buildHtml(contact, tpl);
 
     // Encode bytes to base64url (handles non-ASCII chars correctly)
     const toBase64 = (str) => {
