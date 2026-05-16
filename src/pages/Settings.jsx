@@ -10,6 +10,7 @@ import SupabaseStatus from '@/components/settings/SupabaseStatus';
 import SchedulingLinkSettings from '@/components/settings/SchedulingLinkSettings';
 import ApiKeysSettings from '@/components/settings/ApiKeysSettings';
 import WebhookDocs from '@/components/settings/WebhookDocs';
+import SmtpImapSettings from '@/components/settings/SmtpImapSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -200,7 +201,10 @@ export default function Settings() {
                   <Label className="text-xs">Assinatura Padrão</Label>
                   <Textarea value={remetente.assinatura} onChange={e => setRemetente({ ...remetente, assinatura: e.target.value })} className="mt-1 text-sm min-h-[100px] font-mono text-xs" />
                 </div>
-              </div>
+                </div>
+                <div className="border-t border-border pt-5 mt-2">
+                <SmtpImapSettings />
+                </div>
             </>
           )}
 
