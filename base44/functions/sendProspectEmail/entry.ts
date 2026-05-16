@@ -14,8 +14,9 @@ function buildHtml(contact, tpl) {
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 <tr><td style="background:linear-gradient(135deg,#1a3a6b,#2d5fa6);padding:36px 40px;text-align:center;">
+  <p style="margin:0 0 4px;color:#c8d8f0;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Escritório Contábil</p>
   <h1 style="margin:0;color:#f0c040;font-size:22px;font-weight:700;">Marcos Eduardo</h1>
-  <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Contador Partidário e Eleitoral · CRC/SP 151562/O-0</p>
+  <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Assessoria em Contabilidade Eleitoral · CRC/SP 151562/O-0</p>
   <p style="margin:4px 0 0;color:#a0b4cc;font-size:12px;">contato@marcoseduardocontabil.com.br</p>
 </td></tr>
 <tr><td style="padding:40px;">
@@ -104,7 +105,34 @@ Deno.serve(async (req) => {
         .replace(/\{\{cidade\}\}/g, contact.city || '')
         .replace(/\{\{estado\}\}/g, contact.state || '');
       subject = personalize(body.subject);
-      htmlBody = personalize(body.html_body);
+      const rawHtml = personalize(body.html_body);
+      // Wrap campaign HTML in a full email-safe envelope if it's just a fragment
+      const isFullHtml = rawHtml.trim().toLowerCase().startsWith('<!doctype') || rawHtml.trim().toLowerCase().startsWith('<html');
+      htmlBody = isFullHtml ? rawHtml : `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:40px 20px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);max-width:600px;">
+<tr><td style="background:linear-gradient(135deg,#1a3a6b,#2d5fa6);padding:32px 40px;text-align:center;">
+  <p style="margin:0 0 4px;color:#c8d8f0;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Escritório Contábil</p>
+  <h1 style="margin:0;color:#f0c040;font-size:22px;font-weight:700;">Marcos Eduardo</h1>
+  <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Assessoria em Contabilidade Eleitoral · CRC/SP 151562/O-0</p>
+  <p style="margin:4px 0 0;color:#a0b4cc;font-size:12px;">contato@marcoseduardocontabil.com.br</p>
+</td></tr>
+<tr><td style="padding:40px;">${rawHtml}</td></tr>
+<tr><td style="background:#f8fafc;border-top:1px solid #e8ecf0;padding:20px 40px;text-align:center;">
+  <p style="margin:0;font-size:12px;color:#aaa;">Marcos Eduardo · Contador Partidário e Eleitoral · CRC/SP 151562/O-0</p>
+  <p style="margin:4px 0 0;font-size:12px;color:#bbb;">Rua Suíça, 595 - Parque das Nações · Santo André - SP · CEP 09210-000</p>
+  <p style="margin:4px 0 0;font-size:12px;color:#bbb;">contato@marcoseduardocontabil.com.br</p>
+  <p style="margin:4px 0 0;font-size:11px;color:#ccc;">Você recebeu este e-mail pois seu diretório consta em nossa base de prospecção para 2026.</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
     } else {
       const tpl = TEMPLATES[templateId] || TEMPLATES['prospeccao_geral'];
       subject = tpl.subject(contact);
