@@ -142,8 +142,8 @@ Deno.serve(async (req) => {
     // Send via Gmail API (allows external recipients)
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
 
-    // Encode bytes to base64url (handles non-ASCII chars correctly)
-    const toBase64 = (str) => {
+    // base64url encode a string (for wrapping the full MIME message)
+    const toBase64url = (str) => {
       const bytes = new TextEncoder().encode(str);
       let binary = '';
       for (const b of bytes) binary += String.fromCharCode(b);
@@ -153,21 +153,20 @@ Deno.serve(async (req) => {
     // RFC 2047 encoded subject for non-ASCII chars
     const encodedSubject = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
 
-    // Build RFC 2822 MIME message — body encoded as base64
-    const bodyBase64 = toBase64(htmlBody);
+    // Build RFC 2822 MIME message — HTML body inline (no Content-Transfer-Encoding)
+    // The entire raw MIME string is then base64url-encoded once for the Gmail API
     const mimeMessage = [
       `To: ${contact.email}`,
       `Reply-To: Marcos Eduardo <contato@marcoseduardocontabil.com.br>`,
       `Subject: ${encodedSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset="UTF-8"',
-      'Content-Transfer-Encoding: base64',
       '',
-      bodyBase64,
+      htmlBody,
     ].join('\r\n');
 
-    // Encode the full MIME message as base64url for Gmail API
-    const encodedMessage = toBase64(mimeMessage);
+    // Encode the full MIME message as base64url for Gmail API (single encoding pass)
+    const encodedMessage = toBase64url(mimeMessage);
 
     const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
