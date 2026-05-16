@@ -167,9 +167,10 @@ ${bodyText}`,
     if (b.type === 'text') return `<p style="font-family:Arial,sans-serif;color:#374151;font-size:14px;line-height:1.75;margin:0 0 14px 0;white-space:pre-wrap;">${b.content}</p>`;
     if (b.type === 'divider') return `<hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">`;
     if (b.type === 'button') {
-      // URL may contain placeholders like {{sigla_partido}} — keep as-is, will be resolved at send time
       const btnUrl = b.url || '#';
-      return `<div style="text-align:center;margin:20px 0;"><a href="${btnUrl}" style="display:inline-block;background:#1e3a5f;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:700;">${b.content}</a></div>`;
+      const isWa = b.cta_type && b.cta_type !== 'custom';
+      const btnColor = isWa ? '#25D366' : '#1e3a5f';
+      return `<div style="text-align:center;margin:20px 0;"><a href="${btnUrl}" style="display:inline-block;background:${btnColor};color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:700;">${b.content}</a></div>`;
     }
     if (b.type === 'image' && b.url) return `<div style="margin:12px 0;"><img src="${b.url}" alt="${b.alt || ''}" style="max-width:100%;border-radius:6px;"></div>`;
     return '';
