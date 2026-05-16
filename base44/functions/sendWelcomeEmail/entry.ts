@@ -16,6 +16,7 @@ function buildHtml(contact) {
 <tr><td style="background:linear-gradient(135deg,#1a3a6b,#2d5fa6);padding:36px 40px;text-align:center;">
   <h1 style="margin:0;color:#f0c040;font-size:22px;font-weight:700;">Marcos Eduardo</h1>
   <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Contador Partidário e Eleitoral · CRC/SP 151562/O-0</p>
+  <p style="margin:4px 0 0;color:#a0b4cc;font-size:12px;">contato@marcoseduardocontabil.com.br</p>
 </td></tr>
 <tr><td style="padding:40px;">
   <p style="margin:0 0 16px;font-size:16px;color:#1a3a6b;font-weight:600;">Olá, ${name}${greeting ? ' — ' + greeting : ''}!</p>
@@ -44,6 +45,7 @@ function buildHtml(contact) {
 <tr><td style="background:#f8fafc;border-top:1px solid #e8ecf0;padding:20px 40px;text-align:center;">
   <p style="margin:0;font-size:12px;color:#aaa;">Marcos Eduardo · Contador Partidário e Eleitoral · CRC/SP 151562/O-0</p>
   <p style="margin:4px 0 0;font-size:12px;color:#bbb;">Rua Suíça, 595 - Parque das Nações · Santo André - SP · CEP 09210-000</p>
+  <p style="margin:4px 0 0;font-size:12px;color:#bbb;">contato@marcoseduardocontabil.com.br</p>
   <p style="margin:4px 0 0;font-size:11px;color:#ccc;">Você recebeu este e-mail pois seu diretório consta em nossa base de prospecção para 2026.</p>
 </td></tr>
 </table>
@@ -51,6 +53,14 @@ function buildHtml(contact) {
 </table>
 </body>
 </html>`;
+}
+
+// Encode bytes to base64url (handles non-ASCII chars correctly)
+function toBase64url(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 Deno.serve(async (req) => {
@@ -71,12 +81,39 @@ Deno.serve(async (req) => {
       ? `${contact.party_acronym || contact.party_name} - Regularização Partidária 2026 - Diagnóstico Gratuito`
       : `Regularização Partidária 2026 - Diagnóstico Gratuito para seu Diretório`;
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: contact.email,
-      subject,
-      body: buildHtml(contact),
-      from_name: 'Marcos Eduardo - Contador Partidário',
+    const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+
+    const htmlBody = buildHtml(contact);
+    const encodedSubject = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
+    const bodyBase64 = toBase64url(htmlBody);
+
+    const mimeMessage = [
+      `To: ${contact.email}`,
+      `Reply-To: Marcos Eduardo <contato@marcoseduardocontabil.com.br>`,
+      `Subject: ${encodedSubject}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset="UTF-8"',
+      'Content-Transfer-Encoding: base64',
+      '',
+      bodyBase64,
+    ].join('\r\n');
+
+    const encodedMessage = toBase64url(mimeMessage);
+
+    const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw: encodedMessage }),
     });
+
+    if (!gmailRes.ok) {
+      const errData = await gmailRes.text();
+      console.error('Gmail API error:', gmailRes.status, errData);
+      throw new Error(`Gmail API error ${gmailRes.status}: ${errData}`);
+    }
 
     if (contact.id) {
       await base44.asServiceRole.entities.Contact.update(contact.id, {

@@ -116,6 +116,7 @@ Deno.serve(async (req) => {
     const bodyBase64 = toBase64(htmlBody);
     const mimeMessage = [
       `To: ${contact.email}`,
+      `Reply-To: Marcos Eduardo <contato@marcoseduardocontabil.com.br>`,
       `Subject: ${encodedSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset="UTF-8"',
