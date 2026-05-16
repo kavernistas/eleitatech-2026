@@ -111,11 +111,11 @@ export default function EmailPreview({ subject, previewText, blocks, senderName 
           <div style={{ background: '#1e3a5f', borderRadius: '10px 10px 0 0', padding: '20px 28px', marginBottom: '0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg, #c5991a, #e4b84a)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>⚖</span>
+                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>📊</span>
               </div>
               <div>
-                <div style={{ color: '#fff', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '14px' }}>Escritório Jurídico</div>
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase' }}>Especialistas Eleitorais 2026</div>
+                <div style={{ color: '#fff', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '14px' }}>Escritório Contábil</div>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase' }}>Assessoria em Contabilidade Eleitoral</div>
               </div>
             </div>
           </div>
@@ -134,7 +134,7 @@ export default function EmailPreview({ subject, previewText, blocks, senderName 
           {/* Footer */}
           <div style={{ background: '#f3f4f6', borderRadius: '0 0 10px 10px', padding: '16px 28px', textAlign: 'center' }}>
             <p style={{ color: '#6b7280', fontFamily: 'Arial,sans-serif', fontSize: '11px', margin: '0 0 4px 0' }}>
-              © 2026 Escritório Jurídico — Direito Eleitoral e Partidário
+              © 2026 Marcos Eduardo — Assessoria em Contabilidade Eleitoral
             </p>
             <p style={{ color: '#9ca3af', fontFamily: 'Arial,sans-serif', fontSize: '10px', margin: '0' }}>
               Você está recebendo este e-mail porque seu partido está em nossa base de contatos.{' '}
