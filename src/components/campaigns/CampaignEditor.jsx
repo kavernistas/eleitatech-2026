@@ -19,6 +19,9 @@ const PLACEHOLDERS = [
   { label: '{{sigla_partido}}', desc: 'Sigla (ex: PT)' },
   { label: '{{cidade}}', desc: 'Cidade do contato' },
   { label: '{{estado}}', desc: 'Estado (UF)' },
+  { label: '{{email}}', desc: 'E-mail do contato' },
+  { label: '{{cnpj}}', desc: 'CNPJ do diretório' },
+  { label: '{{assunto_campanha}}', desc: 'Assunto da campanha' },
 ];
 
 const BLOCK_TYPES = [
@@ -163,7 +166,11 @@ ${bodyText}`,
     if (b.type === 'subheader') return `<h2 style="font-family:Arial,sans-serif;color:#2d4a7a;font-size:16px;font-weight:600;margin:0 0 10px 0;">${b.content}</h2>`;
     if (b.type === 'text') return `<p style="font-family:Arial,sans-serif;color:#374151;font-size:14px;line-height:1.75;margin:0 0 14px 0;white-space:pre-wrap;">${b.content}</p>`;
     if (b.type === 'divider') return `<hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">`;
-    if (b.type === 'button') return `<div style="text-align:center;margin:20px 0;"><a href="${b.url || '#'}" style="display:inline-block;background:#1e3a5f;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:700;">${b.content}</a></div>`;
+    if (b.type === 'button') {
+      // URL may contain placeholders like {{sigla_partido}} — keep as-is, will be resolved at send time
+      const btnUrl = b.url || '#';
+      return `<div style="text-align:center;margin:20px 0;"><a href="${btnUrl}" style="display:inline-block;background:#1e3a5f;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-family:Arial,sans-serif;font-size:14px;font-weight:700;">${b.content}</a></div>`;
+    }
     if (b.type === 'image' && b.url) return `<div style="margin:12px 0;"><img src="${b.url}" alt="${b.alt || ''}" style="max-width:100%;border-radius:6px;"></div>`;
     return '';
   }).join('');

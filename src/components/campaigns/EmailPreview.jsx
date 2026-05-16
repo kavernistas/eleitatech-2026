@@ -24,7 +24,10 @@ function resolvePlaceholders(text, contact) {
     .replace(/\{\{sigla_partido\}\}/g, contact.sigla_partido || FALLBACK.sigla_partido)
     .replace(/\{\{partido_sigla\}\}/g, contact.sigla_partido || FALLBACK.sigla_partido)
     .replace(/\{\{cidade\}\}/g, contact.cidade || FALLBACK.cidade)
-    .replace(/\{\{estado\}\}/g, contact.estado || FALLBACK.estado);
+    .replace(/\{\{estado\}\}/g, contact.estado || FALLBACK.estado)
+    .replace(/\{\{email\}\}/g, 'joao@pt-sp.org.br')
+    .replace(/\{\{cnpj\}\}/g, '12.345.678/0001-99')
+    .replace(/\{\{assunto_campanha\}\}/g, 'Assunto da Campanha');
 }
 
 function renderBlock(block) {

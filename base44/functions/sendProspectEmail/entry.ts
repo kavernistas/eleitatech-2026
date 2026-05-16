@@ -103,7 +103,10 @@ Deno.serve(async (req) => {
         .replace(/\{\{nome_partido\}\}/g, contact.party_name || '')
         .replace(/\{\{sigla_partido\}\}/g, contact.party_acronym || '')
         .replace(/\{\{cidade\}\}/g, contact.city || '')
-        .replace(/\{\{estado\}\}/g, contact.state || '');
+        .replace(/\{\{estado\}\}/g, contact.state || '')
+        .replace(/\{\{email\}\}/g, contact.email || '')
+        .replace(/\{\{cnpj\}\}/g, contact.cnpj || '')
+        .replace(/\{\{assunto_campanha\}\}/g, body.subject || '');
       subject = personalize(body.subject);
       const rawHtml = personalize(body.html_body);
       // Wrap campaign HTML in a full email-safe envelope if it's just a fragment
