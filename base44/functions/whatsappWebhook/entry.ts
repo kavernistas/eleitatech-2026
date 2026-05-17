@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.28';
 
 const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
-const EVOLUTION_APIKEY = "71EA4199E296-4BAE-914B-135EC6674C4F";
+const EVOLUTION_APIKEY = Deno.env.get("EVOLUTION_API_KEY") || "";
 
 const SYSTEM_PROMPT = `Você é um assistente jurídico especializado em direito eleitoral e partidário brasileiro, 
 representando o escritório do Dr. Marcos Eduardo. 

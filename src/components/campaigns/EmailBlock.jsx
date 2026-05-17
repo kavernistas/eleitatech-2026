@@ -26,7 +26,7 @@ const WA_TEMPLATES = [
   },
 ];
 
-const WA_NUMBER = '5511999990000'; // número padrão — pode ser alterado pelo usuário
+const WA_NUMBER = ''; // número configurável via AppSettings (WHATSAPP_DEFAULT_NUMBER)
 
 function buildWhatsAppUrl(number, message) {
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
