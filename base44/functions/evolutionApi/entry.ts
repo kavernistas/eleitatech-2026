@@ -28,11 +28,8 @@ Deno.serve(async (req) => {
     return Response.json({ error: "Evolution API não configurada. Configure EVOLUTION_API_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE_NAME em Configurações → Integrações." }, { status: 400 });
   }
 
-  // Encode instance name for URL (handles spaces and special chars)
   const INSTANCE_ENC = encodeURIComponent(INSTANCE);
-
-  const basicAuth = btoa("user:S3nh@Fud1d4@@");
-  const evoHeaders = { "Content-Type": "application/json", "apikey": EVO_KEY, "Authorization": `Basic ${basicAuth}` };
+  const evoHeaders = { "Content-Type": "application/json", "apikey": EVO_KEY };
 
   const evoFetch = async (path, method = "GET", body = null) => {
     const opts = { method, headers: evoHeaders };
@@ -78,32 +75,14 @@ Deno.serve(async (req) => {
       return Response.json(data);
     }
 
-    // Debug: probe server health and auth
     if (action === "listInstances") {
-      const baseUrl = EVO_URL;
-      const ba = btoa("user:S3nh@Fud1d4@@");
-      // Test 1: only Basic Auth
-      const r1 = await fetch(`${baseUrl}/instance/fetchInstances`, { headers: { "Authorization": `Basic ${ba}` } });
+      const r1 = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers: { "apikey": EVO_KEY } });
       const t1 = await r1.text();
-      // Test 2: Basic Auth + apikey
-      const r2 = await fetch(`${baseUrl}/instance/fetchInstances`, { headers: { "Authorization": `Basic ${ba}`, "apikey": EVO_KEY } });
-      const t2 = await r2.text();
-      // Test 3: only apikey (no basic auth)
-      const r3 = await fetch(`${baseUrl}/instance/fetchInstances`, { headers: { "apikey": EVO_KEY } });
-      const t3 = await r3.text();
-      // Test 4: root ping no auth
-      const rPing = await fetch(`${baseUrl}/`).catch(e => ({ status: -1, text: async () => e.message }));
-      const tPing = await rPing.text();
       return Response.json({
-        basic_only: { status: r1.status, body: t1.substring(0, 400) },
-        basic_plus_apikey: { status: r2.status, body: t2.substring(0, 400) },
-        apikey_only: { status: r3.status, body: t3.substring(0, 400) },
-        root_ping: { status: rPing.status, body: tPing.substring(0, 200) },
-        EVO_URL: baseUrl,
+        apikey_only: { status: r1.status, body: t1.substring(0, 400) },
+        EVO_URL,
         INSTANCE,
-        key_length: EVO_KEY.length,
         key_preview: EVO_KEY.substring(0, 12) + '...',
-        basic_auth_b64: ba,
       });
     }
 

@@ -65,10 +65,9 @@ async function analyzeIntent(messageText) {
 async function sendWhatsApp(evoUrl, evoKey, instance, phone, text) {
   const normalized = phone.replace(/\D/g, "");
   const number = normalized.startsWith("55") ? normalized : `55${normalized}`;
-  const basicAuth = btoa("user:S3nh@Fud1d4@@");
   await fetch(`${evoUrl}/message/sendText/${instance}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "apikey": evoKey, "Authorization": `Basic ${basicAuth}` },
+    headers: { "Content-Type": "application/json", "apikey": evoKey },
     body: JSON.stringify({ number, text }),
   });
 }
