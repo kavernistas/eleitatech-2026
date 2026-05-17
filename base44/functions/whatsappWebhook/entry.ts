@@ -134,7 +134,12 @@ Deno.serve(async (req) => {
     // Only handle messages.upsert
     if (body.event !== "messages.upsert") return Response.json({ ok: true });
 
-    const msg = body.data;
+    // Evolution API v2 may wrap messages in an array inside body.data or body.data.messages
+    let rawMsg = body.data;
+    if (Array.isArray(rawMsg)) rawMsg = rawMsg[0];
+    if (rawMsg?.messages && Array.isArray(rawMsg.messages)) rawMsg = rawMsg.messages[0];
+    const msg = rawMsg;
+
     if (!msg || msg.key?.fromMe) return Response.json({ ok: true });
 
     // Ignore group messages
@@ -144,9 +149,25 @@ Deno.serve(async (req) => {
     const senderPhone = remoteJid.replace("@s.whatsapp.net", "").replace(/\D/g, "");
     if (!senderPhone) return Response.json({ ok: true });
 
-    const messageText = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
-    const hasMedia = !!(msg.message?.imageMessage || msg.message?.documentMessage || msg.message?.audioMessage);
-    const senderName = msg.pushName || senderPhone;
+    // Extract text — covers all known Evolution API v1/v2 message formats
+    const messageText =
+      msg.message?.conversation ||
+      msg.message?.extendedTextMessage?.text ||
+      msg.message?.buttonsResponseMessage?.selectedDisplayText ||
+      msg.message?.listResponseMessage?.title ||
+      msg.message?.templateButtonReplyMessage?.selectedDisplayText ||
+      msg.body ||
+      msg.text ||
+      "";
+
+    const hasMedia = !!(
+      msg.message?.imageMessage ||
+      msg.message?.documentMessage ||
+      msg.message?.audioMessage ||
+      msg.message?.videoMessage ||
+      msg.message?.stickerMessage
+    );
+    const senderName = msg.pushName || msg.notifyName || senderPhone;
 
     // Find or create contact
     let contact = await findContactByPhone(base44, senderPhone);
