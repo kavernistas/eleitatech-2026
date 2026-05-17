@@ -28,14 +28,20 @@ Deno.serve(async (req) => {
     return Response.json({ error: "Evolution API não configurada. Configure EVOLUTION_API_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE_NAME em Configurações → Integrações." }, { status: 400 });
   }
 
-  const evoHeaders = () => ({ "Content-Type": "application/json", "apikey": EVO_KEY });
+  // Encode instance name for URL (handles spaces and special chars)
+  const INSTANCE_ENC = encodeURIComponent(INSTANCE);
+
+  const evoHeaders = { "Content-Type": "application/json", "apikey": EVO_KEY };
 
   const evoFetch = async (path, method = "GET", body = null) => {
-    const opts = { method, headers: evoHeaders() };
+    const opts = { method, headers: evoHeaders };
     if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(`${EVO_URL}${path}`, opts);
+    const url = `${EVO_URL}${path}`;
+    console.log(`[evoFetch] ${method} ${url}`);
+    const res = await fetch(url, opts);
     const text = await res.text();
-    try { return JSON.parse(text); } catch { return { raw: text, status: res.status }; }
+    console.log(`[evoFetch] → ${res.status}: ${text.substring(0, 200)}`);
+    try { return { ...JSON.parse(text), _status: res.status }; } catch { return { raw: text, _status: res.status }; }
   };
 
   try {
@@ -49,17 +55,17 @@ Deno.serve(async (req) => {
     }
 
     if (action === "getQrCode") {
-      const data = await evoFetch(`/instance/connect/${INSTANCE}`);
+      const data = await evoFetch(`/instance/connect/${INSTANCE_ENC}`);
       return Response.json(data);
     }
 
     if (action === "getStatus") {
-      const data = await evoFetch(`/instance/connectionState/${INSTANCE}`);
+      const data = await evoFetch(`/instance/connectionState/${INSTANCE_ENC}`);
       return Response.json(data);
     }
 
     if (action === "disconnect") {
-      const data = await evoFetch(`/instance/logout/${INSTANCE}`, "DELETE");
+      const data = await evoFetch(`/instance/logout/${INSTANCE_ENC}`, "DELETE");
       return Response.json(data);
     }
 
@@ -67,12 +73,33 @@ Deno.serve(async (req) => {
       const { phone, text } = payload;
       const normalized = phone.replace(/\D/g, "");
       const number = normalized.startsWith("55") ? normalized : `55${normalized}`;
-      const data = await evoFetch(`/message/sendText/${INSTANCE}`, "POST", { number, text });
+      const data = await evoFetch(`/message/sendText/${INSTANCE_ENC}`, "POST", { number, text });
       return Response.json(data);
+    }
+
+    // Debug: test different auth formats
+    if (action === "listInstances") {
+      const url = `${EVO_URL}/instance/fetchInstances`;
+      const [r1, r2, r3] = await Promise.all([
+        fetch(url, { headers: { "apikey": EVO_KEY } }),
+        fetch(url, { headers: { "Authorization": `Bearer ${EVO_KEY}` } }),
+        fetch(url, { headers: { "apikey": EVO_KEY, "Authorization": `Bearer ${EVO_KEY}` } }),
+      ]);
+      const [t1, t2, t3] = await Promise.all([r1.text(), r2.text(), r3.text()]);
+      return Response.json({
+        apikey_only: { status: r1.status, body: t1.substring(0, 300) },
+        bearer_only: { status: r2.status, body: t2.substring(0, 300) },
+        both: { status: r3.status, body: t3.substring(0, 300) },
+        EVO_URL,
+        INSTANCE,
+        INSTANCE_ENC,
+        key_used: EVO_KEY.substring(0, 12) + '...',
+      });
     }
 
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (err) {
+    console.error("[evolutionApi] error:", err.message);
     return Response.json({ error: err.message }, { status: 500 });
   }
 });
