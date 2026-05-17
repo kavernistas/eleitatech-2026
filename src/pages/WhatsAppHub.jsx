@@ -193,10 +193,14 @@ export default function WhatsAppHub() {
     setConnectionStatus('checking');
     try {
       const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
-      const state = res.data?.instance?.state;
-      if (state === 'open') {
+      const d = res.data;
+      // Evolution API v1/v2 compatibility: state may be nested or at root
+      const state = d?.instance?.state || d?.state || d?.connectionStatus;
+      const isOpen = state === 'open' || state === 'connected' || state === 'CONNECTED';
+      if (isOpen) {
         setConnectionStatus('online');
-        const phone = res.data?.instance?.ownerJid?.replace('@s.whatsapp.net', '') || res.data?.ownerJid?.replace('@s.whatsapp.net', '');
+        const ownerJid = d?.instance?.ownerJid || d?.ownerJid || d?.instance?.profilePictureUrl;
+        const phone = ownerJid?.replace('@s.whatsapp.net', '');
         if (phone) setConnectedPhone(phone);
       } else {
         setConnectionStatus('disconnected');
