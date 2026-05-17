@@ -8,7 +8,7 @@ import { Phone, Database, Check, Save, Eye, EyeOff, Info, Zap, Copy } from 'luci
 
 const KEYS = [
   { section: 'evolution', label: 'API Evolution (WhatsApp)', icon: Phone, color: 'green', fields: [
-    { key: 'EVOLUTION_API_URL', label: 'URL da API', placeholder: 'http://legal-legis-evolution-api:8080', type: 'text', hint: 'Use a URL interna do EasyPanel para menor latência' },
+    { key: 'EVOLUTION_API_URL', label: 'URL da API (pública)', placeholder: 'https://legal-legis-evolution-api.f5rg2q.easypanel.host', type: 'text', hint: 'Use a URL pública/externa — a URL interna do EasyPanel não é acessível pelo Base44' },
     { key: 'EVOLUTION_API_KEY', label: 'Chave da API (AUTHENTICATION_API_KEY)', placeholder: 'Cole aqui o valor exato de AUTHENTICATION_API_KEY do EasyPanel → Ambiente', type: 'password' },
     { key: 'EVOLUTION_INSTANCE_NAME', label: 'Nome da Instância', placeholder: 'Legal Legis', type: 'text' },
   ]},
@@ -18,32 +18,16 @@ const KEYS = [
   ]},
 ];
 
-const INTERNAL_URL = 'http://legal-legis-evolution-api:8080';
-
 function MaskedInput({ field, value, onChange }) {
   const [show, setShow] = useState(false);
   if (field.type !== 'password') {
-    const isUrlField = field.key === 'EVOLUTION_API_URL';
     return (
-      <div className="relative mt-1 flex gap-2">
-        <Input
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={field.placeholder}
-          className="h-9 text-sm font-mono flex-1"
-        />
-        {isUrlField && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onChange(INTERNAL_URL)}
-            className="text-[10px] px-2 h-9 whitespace-nowrap border-amber-300 text-amber-700 hover:bg-amber-50"
-          >
-            Usar URL interna
-          </Button>
-        )}
-      </div>
+      <Input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={field.placeholder}
+        className="mt-1 h-9 text-sm font-mono"
+      />
     );
   }
   return (
@@ -145,10 +129,10 @@ export default function ApiKeysSettings() {
         </div>
         <ol className="space-y-1.5 text-xs text-amber-700 dark:text-amber-300 list-decimal list-inside">
           <li><strong>EasyPanel → evolution-api → Ambiente</strong>: copie o valor exato de <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">AUTHENTICATION_API_KEY</code>.</li>
-          <li>Cole esse valor no campo <strong>"Chave da API"</strong> acima e salve.</li>
-          <li>No campo <strong>URL da API</strong>, clique em <strong>"Usar URL interna"</strong> e salve — isso elimina o 401 por rede.</li>
+          <li>Cole esse valor no campo <strong>"Chave da API"</strong> acima.</li>
+          <li>No campo <strong>URL da API</strong>, use a <strong>URL pública</strong> do EasyPanel (ex: <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">https://legal-legis-evolution-api.f5rg2q.easypanel.host</code>). A URL interna <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">http://legal-legis-evolution-api:8080</code> não funciona — o Base44 roda fora da sua rede Docker.</li>
           <li>Confirme que o nome da instância está exatamente igual ao que aparece no painel da Evolution API.</li>
-          <li>Vá para <strong>Central WhatsApp</strong> → aba Conexão → clique em <strong>Verificar Conexão</strong> — deve aparecer "Conectado".</li>
+          <li>Salve e vá para <strong>Central WhatsApp</strong> → aba Conexão → clique em <strong>Verificar Conexão</strong>.</li>
         </ol>
       </div>
 
