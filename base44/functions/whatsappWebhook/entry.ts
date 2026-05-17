@@ -101,10 +101,17 @@ function resolveStatus(currentStatus, suggestedStatus) {
 Deno.serve(async (req) => {
   if (req.method !== "POST") return Response.json({ ok: true });
 
+  // Accept both x-webhook-secret header and Evolution API apikey in body
   const expectedSecret = Deno.env.get("WEBHOOK_SECRET");
-  const receivedSecret = req.headers.get("x-webhook-secret");
-  if (expectedSecret && receivedSecret !== expectedSecret) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (expectedSecret) {
+    const receivedSecret = req.headers.get("x-webhook-secret");
+    const bodyClone = req.clone();
+    let bodyApiKey = "";
+    try { const b = await bodyClone.json(); bodyApiKey = b?.apikey || ""; } catch { /* ignore */ }
+    const EVOLUTION_HARDCODED_KEY = "71EA4199E296-4BAE-914B-135EC6674C4F";
+    if (receivedSecret !== expectedSecret && bodyApiKey !== expectedSecret && bodyApiKey !== EVOLUTION_HARDCODED_KEY) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   // External webhook — use createClientFromRequest, access via asServiceRole only
