@@ -8,9 +8,9 @@ import { Phone, Database, Check, Save, Eye, EyeOff, Info, Zap, Copy } from 'luci
 
 const KEYS = [
   { section: 'evolution', label: 'API Evolution (WhatsApp)', icon: Phone, color: 'green', fields: [
-    { key: 'EVOLUTION_API_URL', label: 'URL da API', placeholder: 'http://legal-legis-evolution-api.f5rg2q.easypanel.host', type: 'text' },
-    { key: 'EVOLUTION_API_KEY', label: 'Chave da API (AUTHENTICATION_API_KEY)', placeholder: 'sua-chave-evolution', type: 'password' },
-    { key: 'EVOLUTION_INSTANCE_NAME', label: 'Nome da Instância', placeholder: 'eleitatech-principal', type: 'text' },
+    { key: 'EVOLUTION_API_URL', label: 'URL da API', placeholder: 'http://legal-legis-evolution-api:8080', type: 'text', hint: 'Use a URL interna do EasyPanel para menor latência' },
+    { key: 'EVOLUTION_API_KEY', label: 'Chave da API (AUTHENTICATION_API_KEY)', placeholder: 'Cole aqui o valor exato de AUTHENTICATION_API_KEY do EasyPanel → Ambiente', type: 'password' },
+    { key: 'EVOLUTION_INSTANCE_NAME', label: 'Nome da Instância', placeholder: 'Legal Legis', type: 'text' },
   ]},
   { section: 'supabase', label: 'Supabase', icon: Database, color: 'emerald', fields: [
     { key: 'SUPABASE_URL', label: 'URL do Projeto', placeholder: 'https://xxxx.supabase.co', type: 'text' },
@@ -18,16 +18,32 @@ const KEYS = [
   ]},
 ];
 
+const INTERNAL_URL = 'http://legal-legis-evolution-api:8080';
+
 function MaskedInput({ field, value, onChange }) {
   const [show, setShow] = useState(false);
   if (field.type !== 'password') {
+    const isUrlField = field.key === 'EVOLUTION_API_URL';
     return (
-      <Input
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={field.placeholder}
-        className="mt-1 h-9 text-sm font-mono"
-      />
+      <div className="relative mt-1 flex gap-2">
+        <Input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          className="h-9 text-sm font-mono flex-1"
+        />
+        {isUrlField && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onChange(INTERNAL_URL)}
+            className="text-[10px] px-2 h-9 whitespace-nowrap border-amber-300 text-amber-700 hover:bg-amber-50"
+          >
+            Usar URL interna
+          </Button>
+        )}
+      </div>
     );
   }
   return (
@@ -113,6 +129,7 @@ export default function ApiKeysSettings() {
                     onChange={v => setValues(prev => ({ ...prev, [field.key]: v }))}
                   />
                   <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">{field.key}</p>
+                  {field.hint && <p className="text-[10px] text-amber-600 mt-0.5">💡 {field.hint}</p>}
                 </div>
               ))}
             </div>
@@ -127,11 +144,11 @@ export default function ApiKeysSettings() {
           <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">Checklist de Configuração — Evolution API</p>
         </div>
         <ol className="space-y-1.5 text-xs text-amber-700 dark:text-amber-300 list-decimal list-inside">
-          <li>Acesse o <strong>Easypanel</strong> → aba <strong>Ambiente</strong> → confirme que <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">AUTHENTICATION_API_KEY</code> é igual à chave acima.</li>
-          <li>No <strong>Evolution Manager</strong>, abra a instância <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">eleitatech-principal</code> → Webhook → insira a URL da função <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">whatsappWebhook</code>.</li>
-          <li>Ative o evento <strong>messages.upsert</strong> no webhook.</li>
-          <li>Em <strong>Integrações</strong> na Evolution API, insira sua chave OpenAI para ativar as respostas automáticas da IA.</li>
-          <li>Vá para <strong>Central WhatsApp</strong> → aba Conexão → clique em <strong>Conectar WhatsApp</strong> para gerar o QR Code.</li>
+          <li><strong>EasyPanel → evolution-api → Ambiente</strong>: copie o valor exato de <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">AUTHENTICATION_API_KEY</code>.</li>
+          <li>Cole esse valor no campo <strong>"Chave da API"</strong> acima e salve.</li>
+          <li>No campo <strong>URL da API</strong>, clique em <strong>"Usar URL interna"</strong> e salve — isso elimina o 401 por rede.</li>
+          <li>Confirme que o nome da instância está exatamente igual ao que aparece no painel da Evolution API.</li>
+          <li>Vá para <strong>Central WhatsApp</strong> → aba Conexão → clique em <strong>Verificar Conexão</strong> — deve aparecer "Conectado".</li>
         </ol>
       </div>
 
