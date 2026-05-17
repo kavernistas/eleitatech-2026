@@ -195,14 +195,22 @@ export default function WhatsAppHub() {
       const res = await base44.functions.invoke('evolutionApi', { action: 'getStatus' });
       const d = res.data;
       // Evolution API v1/v2 compatibility: state may be nested or at root
-      const state = d?.instance?.state || d?.state || d?.connectionStatus;
-      const isOpen = state === 'open' || state === 'connected' || state === 'CONNECTED';
-      if (isOpen) {
+      const state = d?.instance?.state || d?.state || d?.connectionStatus || d?.instance?.connectionStatus;
+      const stateStr = (state || '').toString().toLowerCase();
+      const isOpen = stateStr === 'open' || stateStr === 'connected' || stateStr === 'online';
+
+      // Se recebemos qualquer resposta JSON válida com dados de instância, provavelmente está conectado
+      const hasInstanceData = d?.instance || d?.ownerJid || d?.instance?.ownerJid;
+
+      if (isOpen || (hasInstanceData && !d?.error)) {
         setConnectionStatus('online');
-        const ownerJid = d?.instance?.ownerJid || d?.ownerJid || d?.instance?.profilePictureUrl;
-        const phone = ownerJid?.replace('@s.whatsapp.net', '');
+        const ownerJid = d?.instance?.ownerJid || d?.ownerJid;
+        const phone = ownerJid?.replace('@s.whatsapp.net', '').replace(/\D/g, '');
         if (phone) setConnectedPhone(phone);
+      } else if (d?.error) {
+        setConnectionStatus('disconnected');
       } else {
+        // Resposta sem state claro — consideramos como potencialmente conectado se não há erro
         setConnectionStatus('disconnected');
       }
     } catch {
