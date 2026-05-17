@@ -77,23 +77,26 @@ Deno.serve(async (req) => {
       return Response.json(data);
     }
 
-    // Debug: test different auth formats
+    // Debug: probe server health and auth
     if (action === "listInstances") {
-      const url = `${EVO_URL}/instance/fetchInstances`;
-      const [r1, r2, r3] = await Promise.all([
-        fetch(url, { headers: { "apikey": EVO_KEY } }),
-        fetch(url, { headers: { "Authorization": `Bearer ${EVO_KEY}` } }),
-        fetch(url, { headers: { "apikey": EVO_KEY, "Authorization": `Bearer ${EVO_KEY}` } }),
-      ]);
-      const [t1, t2, t3] = await Promise.all([r1.text(), r2.text(), r3.text()]);
+      const baseUrl = EVO_URL;
+      // Test 1: root ping (no auth)
+      const rPing = await fetch(`${baseUrl}/`).catch(e => ({ status: -1, text: async () => e.message }));
+      const tPing = await rPing.text();
+      // Test 2: fetchInstances with apikey header
+      const r1 = await fetch(`${baseUrl}/instance/fetchInstances`, { headers: { "apikey": EVO_KEY } });
+      const t1 = await r1.text();
+      // Test 3: try without any auth to see error format
+      const r2 = await fetch(`${baseUrl}/instance/fetchInstances`);
+      const t2 = await r2.text();
       return Response.json({
-        apikey_only: { status: r1.status, body: t1.substring(0, 300) },
-        bearer_only: { status: r2.status, body: t2.substring(0, 300) },
-        both: { status: r3.status, body: t3.substring(0, 300) },
-        EVO_URL,
+        ping: { status: rPing.status, body: tPing.substring(0, 200) },
+        with_apikey: { status: r1.status, body: t1.substring(0, 400) },
+        no_auth: { status: r2.status, body: t2.substring(0, 400) },
+        EVO_URL: baseUrl,
         INSTANCE,
-        INSTANCE_ENC,
-        key_used: EVO_KEY.substring(0, 12) + '...',
+        key_length: EVO_KEY.length,
+        key_preview: EVO_KEY.substring(0, 12) + '...',
       });
     }
 
