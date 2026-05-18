@@ -1,5 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+const APP_URL = Deno.env.get('APP_PUBLIC_URL') || 'https://eleita-tech-2026.base44.app';
+
+function unsubscribeUrl(email) {
+  const encoded = btoa(unescape(encodeURIComponent(email)));
+  return `${APP_URL}/unsubscribe?e=${encoded}`;
+}
+
 function buildHtml(contact, tpl) {
   const name = contact.name || contact.party_name || 'Responsável';
   const party = contact.party_acronym || contact.party_name || '';
@@ -47,6 +54,7 @@ function buildHtml(contact, tpl) {
   <p style="margin:4px 0 0;font-size:12px;color:#bbb;">Rua Suíça, 595 - Parque das Nações · Santo André - SP · CEP 09210-000</p>
   <p style="margin:4px 0 0;font-size:12px;color:#bbb;">contato@marcoseduardocontabil.com.br</p>
   <p style="margin:4px 0 0;font-size:11px;color:#ccc;">Você recebeu este e-mail pois seu diretório consta em nossa base de prospecção para 2026.</p>
+  <p style="margin:8px 0 0;font-size:11px;color:#ccc;">Não deseja mais receber nossos e-mails? <a href="${unsubscribeUrl(contact.email)}" style="color:#1a3a6b;text-decoration:underline;">Clique aqui para se descadastrar</a>.</p>
 </td></tr>
 </table>
 </td></tr>
@@ -79,6 +87,16 @@ const TEMPLATES = {
   },
 };
 
+function buildUnsubscribeFooter(email) {
+  return `<tr><td style="background:#f8fafc;border-top:1px solid #e8ecf0;padding:20px 40px;text-align:center;">
+  <p style="margin:0;font-size:12px;color:#aaa;">Marcos Eduardo · Contador Partidário e Eleitoral · CRC/SP 151562/O-0</p>
+  <p style="margin:4px 0 0;font-size:12px;color:#bbb;">Rua Suíça, 595 - Parque das Nações · Santo André - SP · CEP 09210-000</p>
+  <p style="margin:4px 0 0;font-size:12px;color:#bbb;">contato@marcoseduardocontabil.com.br</p>
+  <p style="margin:4px 0 0;font-size:11px;color:#ccc;">Você recebeu este e-mail pois seu diretório consta em nossa base de prospecção para 2026.</p>
+  <p style="margin:8px 0 0;font-size:11px;color:#ccc;">Não deseja mais receber nossos e-mails? <a href="${unsubscribeUrl(email)}" style="color:#1a3a6b;text-decoration:underline;">Clique aqui para se descadastrar</a>.</p>
+</td></tr>`;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -108,7 +126,6 @@ Deno.serve(async (req) => {
         .replace(/\{\{cnpj\}\}/g, contact.cnpj || '')
         .replace(/\{\{assunto_campanha\}\}/g, body.subject || '');
 
-      // Personaliza URLs do WhatsApp: decodifica a query string, substitui placeholders, re-encodifica
       const personalizeHtmlUrls = (html) => {
         return html.replace(/href="(https:\/\/wa\.me\/[^"]+)"/g, (match, url) => {
           try {
@@ -125,7 +142,6 @@ Deno.serve(async (req) => {
 
       subject = personalize(body.subject);
       const rawHtml = personalizeHtmlUrls(personalize(body.html_body));
-      // Wrap campaign HTML in a full email-safe envelope if it's just a fragment
       const isFullHtml = rawHtml.trim().toLowerCase().startsWith('<!doctype') || rawHtml.trim().toLowerCase().startsWith('<html');
       htmlBody = isFullHtml ? rawHtml : `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -141,12 +157,7 @@ Deno.serve(async (req) => {
   <p style="margin:4px 0 0;color:#a0b4cc;font-size:12px;">contato@marcoseduardocontabil.com.br</p>
 </td></tr>
 <tr><td style="padding:40px;">${rawHtml}</td></tr>
-<tr><td style="background:#f8fafc;border-top:1px solid #e8ecf0;padding:20px 40px;text-align:center;">
-  <p style="margin:0;font-size:12px;color:#aaa;">Marcos Eduardo · Contador Partidário e Eleitoral · CRC/SP 151562/O-0</p>
-  <p style="margin:4px 0 0;font-size:12px;color:#bbb;">Rua Suíça, 595 - Parque das Nações · Santo André - SP · CEP 09210-000</p>
-  <p style="margin:4px 0 0;font-size:12px;color:#bbb;">contato@marcoseduardocontabil.com.br</p>
-  <p style="margin:4px 0 0;font-size:11px;color:#ccc;">Você recebeu este e-mail pois seu diretório consta em nossa base de prospecção para 2026.</p>
-</td></tr>
+${buildUnsubscribeFooter(contact.email)}
 </table>
 </td></tr>
 </table>
@@ -158,10 +169,9 @@ Deno.serve(async (req) => {
       htmlBody = buildHtml(contact, tpl);
     }
 
-    // Send via Gmail API (allows external recipients)
+    // Send via Gmail API
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
 
-    // base64url encode a string (for wrapping the full MIME message)
     const toBase64url = (str) => {
       const bytes = new TextEncoder().encode(str);
       let binary = '';
@@ -169,11 +179,8 @@ Deno.serve(async (req) => {
       return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     };
 
-    // RFC 2047 encoded subject for non-ASCII chars
     const encodedSubject = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
 
-    // Build RFC 2822 MIME message — HTML body inline (no Content-Transfer-Encoding)
-    // The entire raw MIME string is then base64url-encoded once for the Gmail API
     const mimeMessage = [
       `To: ${contact.email}`,
       `Reply-To: Marcos Eduardo <contato@marcoseduardocontabil.com.br>`,
@@ -184,7 +191,6 @@ Deno.serve(async (req) => {
       htmlBody,
     ].join('\r\n');
 
-    // Encode the full MIME message as base64url for Gmail API (single encoding pass)
     const encodedMessage = toBase64url(mimeMessage);
 
     const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {

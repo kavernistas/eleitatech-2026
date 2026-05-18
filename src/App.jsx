@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 // Add page imports here
+import Unsubscribe from '@/pages/Unsubscribe';
 import Dashboard from '@/pages/Dashboard';
 import Contacts from '@/pages/Contacts';
 import Campaigns from '@/pages/Campaigns';
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/whatsapp" element={<WhatsAppHub />} />
       </Route>
+      <Route path="/unsubscribe" element={<Unsubscribe />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

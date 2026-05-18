@@ -140,8 +140,11 @@ export default function EmailPreview({ subject, previewText, blocks, senderName 
               © 2026 Marcos Eduardo — Assessoria em Contabilidade Eleitoral
             </p>
             <p style={{ color: '#9ca3af', fontFamily: 'Arial,sans-serif', fontSize: '10px', margin: '0' }}>
-              Você está recebendo este e-mail porque seu partido está em nossa base de contatos.{' '}
-              <a href="#" style={{ color: '#1e3a5f' }}>Descadastrar</a>
+              Você está recebendo este e-mail porque seu partido está em nossa base de contatos.
+            </p>
+            <p style={{ color: '#9ca3af', fontFamily: 'Arial,sans-serif', fontSize: '10px', margin: '4px 0 0' }}>
+              Não deseja mais receber nossos e-mails?{' '}
+              <a href="#" style={{ color: '#1e3a5f', textDecoration: 'underline' }}>Clique aqui para se descadastrar</a>.
             </p>
           </div>
         </div>
