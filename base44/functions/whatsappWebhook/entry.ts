@@ -103,15 +103,14 @@ Deno.serve(async (req) => {
     let body;
     try { body = await req.json(); } catch { return Response.json({ ok: true }); }
 
-    // Auth: only block if WEBHOOK_SECRET is set AND request doesn't match it
+    // Auth: accept x-webhook-secret header OR apikey in body (Evolution API sends apikey in body)
     const expectedSecret = Deno.env.get("WEBHOOK_SECRET");
     if (expectedSecret) {
-      const headerSecret = req.headers.get("x-webhook-secret") || req.headers.get("apikey") || "";
+      const headerSecret = req.headers.get("x-webhook-secret") || "";
       const bodyApiKey = body?.apikey || "";
-      if (headerSecret !== expectedSecret && bodyApiKey !== expectedSecret) {
+      if (headerSecret !== expectedSecret && bodyApiKey !== expectedSecret && bodyApiKey !== EVOLUTION_APIKEY) {
         console.log("Auth failed. headerSecret:", headerSecret, "bodyApiKey:", bodyApiKey);
-        // Don't block — Evolution API sends its own internal apikey, not our secret
-        // We log but allow through to process the message
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
       }
     }
 
@@ -161,42 +160,13 @@ Deno.serve(async (req) => {
       msg.text ||
       "";
 
-    // Detect media and extract metadata
-    const imageMsg = msg.message?.imageMessage;
-    const documentMsg = msg.message?.documentMessage;
-    const audioMsg = msg.message?.audioMessage;
-    const videoMsg = msg.message?.videoMessage;
-    const stickerMsg = msg.message?.stickerMessage;
-
-    const hasMedia = !!(imageMsg || documentMsg || audioMsg || videoMsg || stickerMsg);
-
-    let mediaType = null;
-    let mediaCaption = null;
-    let mediaFileName = null;
-    let mediaMimeType = null;
-    let mediaUrl = msg.message?.imageMessage?.url || msg.message?.documentMessage?.url ||
-                   msg.message?.audioMessage?.url || msg.message?.videoMessage?.url || null;
-
-    if (imageMsg) {
-      mediaType = "image";
-      mediaCaption = imageMsg.caption || null;
-      mediaMimeType = imageMsg.mimetype || "image/jpeg";
-    } else if (documentMsg) {
-      mediaType = "document";
-      mediaCaption = documentMsg.caption || null;
-      mediaFileName = documentMsg.fileName || documentMsg.title || "documento";
-      mediaMimeType = documentMsg.mimetype || "application/octet-stream";
-    } else if (audioMsg) {
-      mediaType = "audio";
-      mediaMimeType = audioMsg.mimetype || "audio/ogg";
-    } else if (videoMsg) {
-      mediaType = "video";
-      mediaCaption = videoMsg.caption || null;
-      mediaMimeType = videoMsg.mimetype || "video/mp4";
-    } else if (stickerMsg) {
-      mediaType = "sticker";
-    }
-
+    const hasMedia = !!(
+      msg.message?.imageMessage ||
+      msg.message?.documentMessage ||
+      msg.message?.audioMessage ||
+      msg.message?.videoMessage ||
+      msg.message?.stickerMessage
+    );
     const senderName = msg.pushName || msg.notifyName || senderPhone;
 
     // Find or create contact
@@ -213,19 +183,11 @@ Deno.serve(async (req) => {
     }
 
     const conversation = [...(contact.whatsapp_conversation || [])];
-    const msgEntry = {
+    conversation.push({
       role: "user",
-      content: hasMedia ? (mediaCaption || `[${mediaType || 'mídia'} recebida]`) : messageText,
+      content: hasMedia ? "[Documento/Mídia recebida]" : messageText,
       ts: new Date().toISOString(),
-    };
-    if (hasMedia) {
-      msgEntry.media_type = mediaType;
-      if (mediaUrl) msgEntry.media_url = mediaUrl;
-      if (mediaFileName) msgEntry.media_filename = mediaFileName;
-      if (mediaMimeType) msgEntry.media_mime = mediaMimeType;
-      if (mediaCaption) msgEntry.media_caption = mediaCaption;
-    }
-    conversation.push(msgEntry);
+    });
 
     // Media handler
     if (hasMedia) {
