@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { base44 } from '@/api/base44Client';
 import {
   Search, Filter, Plus, Upload, Download, Tag,
   Mail, Phone, MapPin, Clock, ChevronRight,
-  CheckCircle, AlertCircle, Circle, Star, Users, X
+  CheckCircle, AlertCircle, Circle, Star, Users, X, Trash2
 } from 'lucide-react';
 
 function exportToCSV(contacts) {
@@ -56,6 +57,9 @@ export default function Contacts() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showBulkEmail, setShowBulkEmail] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const qc = useQueryClient();
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ['contacts'],
@@ -104,6 +108,25 @@ export default function Contacts() {
   };
 
   const selectedContacts = filtered.filter(c => selectedIds.has(c.id));
+
+  const deleteContact = useMutation({
+    mutationFn: (id) => base44.entities.Contact.delete(id),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ['contacts'] });
+      if (selectedContact?.id === id) setSelectedContact(null);
+      setDeletingId(null);
+    },
+  });
+
+  const handleDelete = (e, id) => {
+    e.stopPropagation();
+    if (deletingId === id) {
+      deleteContact.mutate(id);
+    } else {
+      setDeletingId(id);
+      setTimeout(() => setDeletingId(null), 3000);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -279,7 +302,7 @@ export default function Contacts() {
                     </div>
                   </button>
                 )}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <ContactCard
                     contact={contact}
                     selected={selectionMode ? selectedIds.has(contact.id) : selectedContact?.id === contact.id}
@@ -287,6 +310,22 @@ export default function Contacts() {
                     onClick={() => selectionMode ? toggleSelect(contact.id) : setSelectedContact(contact)}
                   />
                 </div>
+                {!selectionMode && (
+                  <button
+                    onClick={(e) => handleDelete(e, contact.id)}
+                    className={`flex-shrink-0 flex items-center justify-center w-9 border-l border-border transition-colors ${
+                      deletingId === contact.id
+                        ? 'bg-red-50 text-red-600'
+                        : 'text-muted-foreground hover:bg-red-50 hover:text-red-500'
+                    }`}
+                    title={deletingId === contact.id ? 'Clique novamente para confirmar' : 'Excluir contato'}
+                  >
+                    {deleteContact.isPending && deleteContact.variables === contact.id
+                      ? <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                      : <Trash2 size={13} />
+                    }
+                  </button>
+                )}
               </div>
             ))
           )}
