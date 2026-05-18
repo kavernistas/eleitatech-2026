@@ -4,7 +4,8 @@ import { base44 } from '@/api/base44Client';
 import {
   Wifi, WifiOff, Loader2, MessageSquare, User, Bot,
   AlertTriangle, Send, ChevronRight, Search, CheckCheck,
-  PhoneCall, RefreshCw, Info, FileText, Zap, Plus, X
+  PhoneCall, RefreshCw, Info, FileText, Zap, Plus, X,
+  Image, Film, Volume2, Paperclip, Smile
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -432,7 +433,12 @@ export default function WhatsAppHub() {
                           <p className="text-xs text-muted-foreground truncate mt-0.5 flex items-center gap-1">
                             {lastMsg.role === 'human' ? <User size={9} className="text-[#25D366]" /> :
                               lastMsg.role === 'assistant' ? <Bot size={9} /> : <User size={9} className="text-navy" />}
-                            {lastMsg.content?.substring(0, 50)}
+                            {lastMsg.media_type === 'image' && <><Image size={9} /> Imagem</>}
+                            {lastMsg.media_type === 'video' && <><Film size={9} /> Vídeo</>}
+                            {lastMsg.media_type === 'audio' && <><Volume2 size={9} /> Áudio</>}
+                            {lastMsg.media_type === 'document' && <><Paperclip size={9} /> {lastMsg.media_filename || 'Documento'}</>}
+                            {lastMsg.media_type === 'sticker' && <><Smile size={9} /> Sticker</>}
+                            {!lastMsg.media_type && lastMsg.content?.substring(0, 50)}
                           </p>
                         )}
                       </div>
@@ -541,7 +547,49 @@ export default function WhatsAppHub() {
                                 ? 'bg-navy text-white rounded-tr-sm'
                                 : 'bg-white dark:bg-card border border-border text-foreground rounded-tl-sm'
                             }`}>
-                              {msg.content}
+                              {/* Media rendering */}
+                              {msg.media_type === 'image' && (
+                                <div className="mb-1">
+                                  {msg.media_url
+                                    ? <img src={msg.media_url} alt="imagem" className="rounded-lg max-w-[220px] max-h-[180px] object-cover cursor-pointer" onClick={() => window.open(msg.media_url, '_blank')} />
+                                    : <div className="flex items-center gap-2 text-xs opacity-80"><Image size={14} /> <span>Imagem recebida</span></div>
+                                  }
+                                </div>
+                              )}
+                              {msg.media_type === 'video' && (
+                                <div className="mb-1">
+                                  {msg.media_url
+                                    ? <video src={msg.media_url} controls className="rounded-lg max-w-[220px] max-h-[150px]" />
+                                    : <div className="flex items-center gap-2 text-xs opacity-80"><Film size={14} /> <span>Vídeo recebido</span></div>
+                                  }
+                                </div>
+                              )}
+                              {msg.media_type === 'audio' && (
+                                <div className="mb-1">
+                                  {msg.media_url
+                                    ? <audio src={msg.media_url} controls className="h-8 w-[200px]" />
+                                    : <div className="flex items-center gap-2 text-xs opacity-80"><Volume2 size={14} /> <span>Áudio recebido</span></div>
+                                  }
+                                </div>
+                              )}
+                              {msg.media_type === 'document' && (
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Paperclip size={13} className="flex-shrink-0 opacity-80" />
+                                  {msg.media_url
+                                    ? <a href={msg.media_url} target="_blank" rel="noreferrer" className="text-xs underline underline-offset-2 truncate max-w-[180px]">{msg.media_filename || 'Documento'}</a>
+                                    : <span className="text-xs opacity-80 truncate max-w-[180px]">{msg.media_filename || 'Documento recebido'}</span>
+                                  }
+                                </div>
+                              )}
+                              {msg.media_type === 'sticker' && (
+                                <div className="flex items-center gap-2 mb-1 text-xs opacity-80"><Smile size={14} /><span>Sticker</span></div>
+                              )}
+                              {/* Text / caption */}
+                              {msg.content && !(msg.content.startsWith('[') && msg.content.endsWith(']')) && (
+                                <span>{msg.content}</span>
+                              )}
+                              {/* Fallback for no-content media without caption */}
+                              {!msg.content && !msg.media_type && <span className="opacity-60 italic text-xs">[mensagem vazia]</span>}
                             </div>
                             {msg.ts && (
                               <p className={`text-[10px] text-muted-foreground mt-0.5 ${(isUser || isHuman) ? 'text-right' : 'text-left'}`}>
