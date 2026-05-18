@@ -76,12 +76,16 @@ async function findContactByPhone(base44, phone) {
   const normalized = phone.replace(/\D/g, "");
   const withCountry = normalized.startsWith("55") ? normalized : `55${normalized}`;
   const withoutCountry = withCountry.startsWith("55") ? withCountry.slice(2) : normalized;
+  const variants = new Set([withCountry, withoutCountry, normalized]);
 
-  for (const variant of [withCountry, withoutCountry, normalized]) {
-    const results = await base44.asServiceRole.entities.Contact.filter({ phone: variant });
-    if (results?.[0]) return results[0];
-  }
-  return null;
+  // List all contacts and match locally to handle any phone format variation
+  const all = await base44.asServiceRole.entities.Contact.list("-updated_date", 500);
+  const found = all.find(c => {
+    if (!c.phone) return false;
+    const cp = c.phone.replace(/\D/g, "");
+    return variants.has(cp);
+  });
+  return found || null;
 }
 
 function resolveStatus(currentStatus, suggestedStatus) {

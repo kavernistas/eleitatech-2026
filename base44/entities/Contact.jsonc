@@ -24,7 +24,7 @@
     },
     "organ_type": {
       "type": "string",
-      "description": "Tipo do \u00d3rg\u00e3o (ex: Diret\u00f3rio Municipal, Comiss\u00e3o Provis\u00f3ria)"
+      "description": "Tipo do \u00d3rg\u00e3o"
     },
     "cnpj": {
       "type": "string",
@@ -32,7 +32,7 @@
     },
     "situation": {
       "type": "string",
-      "description": "Situa\u00e7\u00e3o do \u00f3rg\u00e3o (ex: Ativo, Cancelado)"
+      "description": "Situa\u00e7\u00e3o do \u00f3rg\u00e3o"
     },
     "role": {
       "type": "string",
@@ -81,8 +81,7 @@
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "Tags de interesse: Urgente, Pend\u00eancia 2024, CNPJ, Contas 2025"
+      }
     },
     "email_valid": {
       "type": "boolean",
