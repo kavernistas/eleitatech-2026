@@ -103,15 +103,26 @@ Deno.serve(async (req) => {
     let body;
     try { body = await req.json(); } catch { return Response.json({ ok: true }); }
 
-    // Auth: accept x-webhook-secret header OR apikey in body (Evolution API sends apikey in body)
-    const expectedSecret = Deno.env.get("WEBHOOK_SECRET");
-    if (expectedSecret) {
-      const headerSecret = req.headers.get("x-webhook-secret") || "";
-      const bodyApiKey = body?.apikey || "";
-      if (headerSecret !== expectedSecret && bodyApiKey !== expectedSecret && bodyApiKey !== EVOLUTION_APIKEY) {
-        console.log("Auth failed. headerSecret:", headerSecret, "bodyApiKey:", bodyApiKey);
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
-      }
+    // Auth: accept x-webhook-secret header OR Evolution API key in body
+    const expectedSecret = Deno.env.get("WEBHOOK_SECRET") || "";
+    const headerSecret = req.headers.get("x-webhook-secret") || "";
+    const bodyApiKey = body?.apikey || "";
+
+    // Load evo key from AppSettings for comparison
+    let evoKeyFromSettings = "";
+    try {
+      const settings = await (createClientFromRequest(req)).asServiceRole.entities.AppSettings.filter({ key: "EVOLUTION_API_KEY" });
+      evoKeyFromSettings = settings?.[0]?.value || "";
+    } catch { /* ignore */ }
+
+    const validKeys = [expectedSecret, EVOLUTION_APIKEY, evoKeyFromSettings].filter(Boolean);
+    const isAuthorized = !validKeys.length ||
+      validKeys.includes(headerSecret) ||
+      validKeys.includes(bodyApiKey);
+
+    if (!isAuthorized) {
+      console.log("Auth failed. headerSecret:", headerSecret, "bodyApiKey:", bodyApiKey, "validKeys count:", validKeys.length);
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const base44 = createClientFromRequest(req);
