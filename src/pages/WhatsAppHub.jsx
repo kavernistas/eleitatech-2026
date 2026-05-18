@@ -185,8 +185,16 @@ export default function WhatsAppHub() {
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts-wa'],
     queryFn: () => base44.entities.Contact.list('-updated_date', 200),
-    refetchInterval: 8000,
+    refetchInterval: 3000,
   });
+
+  // Real-time subscription: invalidate query whenever any Contact changes
+  useEffect(() => {
+    const unsub = base44.entities.Contact.subscribe(() => {
+      qc.invalidateQueries({ queryKey: ['contacts-wa'] });
+    });
+    return unsub;
+  }, [qc]);
 
   const handleCheckConnection = async () => {
     setIsChecking(true);
@@ -241,6 +249,7 @@ export default function WhatsAppHub() {
       const updated = contacts.find(c => c.id === selectedContact.id);
       if (updated) setSelectedContact(updated);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contacts]);
 
   const handleAssumirConversa = async () => {
