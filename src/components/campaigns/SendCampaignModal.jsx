@@ -28,6 +28,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState(null); // null = todos filtrados
   const [step, setStep] = useState('config');
+  const [delaySeconds, setDelaySeconds] = useState(5);
   const qc = useQueryClient();
 
   const { data: contacts = [] } = useQuery({
@@ -111,6 +112,8 @@ export default function SendCampaignModal({ campaign, onClose }) {
 
   const [sentCount, setSentCount] = useState(0);
 
+  const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
   const handleSend = async () => {
     setStep('sending');
     setSentCount(0);
@@ -125,6 +128,9 @@ export default function SendCampaignModal({ campaign, onClose }) {
         });
         sent++;
         setSentCount(sent);
+        if (sent < recipients.length && delaySeconds > 0) {
+          await sleep(delaySeconds * 1000);
+        }
       } catch (err) {
         console.error('Erro ao enviar para', contact.email, err.message);
       }
@@ -281,6 +287,32 @@ export default function SendCampaignModal({ campaign, onClose }) {
               </div>
             )}
 
+            {/* Delay entre envios */}
+            <div className="bg-muted/60 border border-border rounded-lg p-3 space-y-1.5">
+              <p className="text-xs font-semibold text-foreground">⏱ Intervalo entre envios</p>
+              <p className="text-[11px] text-muted-foreground">Aguardar entre cada e-mail para evitar bloqueio por spam.</p>
+              <div className="flex gap-2 flex-wrap pt-0.5">
+                {[0, 3, 5, 10, 15, 30].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setDelaySeconds(s)}
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                      delaySeconds === s
+                        ? 'bg-navy text-white border-navy'
+                        : 'border-border text-muted-foreground hover:border-navy hover:text-navy'
+                    }`}
+                  >
+                    {s === 0 ? 'Sem delay' : `${s}s`}
+                  </button>
+                ))}
+              </div>
+              {recipients.length > 0 && delaySeconds > 0 && (
+                <p className="text-[11px] text-muted-foreground pt-0.5">
+                  Tempo estimado: ~{Math.ceil((recipients.length * delaySeconds) / 60)} min para {recipients.length} e-mails
+                </p>
+              )}
+            </div>
+
             <div className="flex gap-2 pt-1">
               <Button variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
               <Button onClick={() => setStep('confirm')} disabled={recipients.length === 0} className="flex-1 bg-navy text-white">
@@ -301,6 +333,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
                 <div className="flex justify-between"><span>Cidade:</span><span className="font-medium text-foreground">{cityFilter === 'all' ? 'Todas' : cityFilter}</span></div>
                 <div className="flex justify-between"><span>Partido:</span><span className="font-medium text-foreground">{partyFilter === 'all' ? 'Todos' : partyFilter}</span></div>
                 <div className="flex justify-between"><span>Destinatários:</span><span className="font-bold text-navy">{recipients.length.toLocaleString('pt-BR')}</span></div>
+                <div className="flex justify-between"><span>Intervalo:</span><span className="font-medium text-foreground">{delaySeconds === 0 ? 'Sem delay' : `${delaySeconds}s entre e-mails`}</span></div>
               </div>
             </div>
             <div className="flex gap-2">
@@ -322,6 +355,9 @@ export default function SendCampaignModal({ campaign, onClose }) {
               <p className="text-sm text-muted-foreground mt-1">
                 {sentCount} de {recipients.length} e-mails enviados
               </p>
+              {delaySeconds > 0 && (
+                <p className="text-xs text-muted-foreground mt-0.5">Intervalo de {delaySeconds}s entre envios</p>
+              )}
             </div>
           </div>
         )}
