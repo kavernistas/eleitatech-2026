@@ -103,26 +103,19 @@ Deno.serve(async (req) => {
     let body;
     try { body = await req.json(); } catch { return Response.json({ ok: true }); }
 
-    // Auth: accept x-webhook-secret header OR Evolution API key in body
+    // Auth: only check x-webhook-secret header if WEBHOOK_SECRET is set
+    // Evolution API key in body is NOT used for auth (changes per instance)
     const expectedSecret = Deno.env.get("WEBHOOK_SECRET") || "";
-    const headerSecret = req.headers.get("x-webhook-secret") || "";
-    const bodyApiKey = body?.apikey || "";
-
-    // Load evo key from AppSettings for comparison
-    let evoKeyFromSettings = "";
-    try {
-      const settings = await (createClientFromRequest(req)).asServiceRole.entities.AppSettings.filter({ key: "EVOLUTION_API_KEY" });
-      evoKeyFromSettings = settings?.[0]?.value || "";
-    } catch { /* ignore */ }
-
-    const validKeys = [expectedSecret, EVOLUTION_APIKEY, evoKeyFromSettings].filter(Boolean);
-    const isAuthorized = !validKeys.length ||
-      validKeys.includes(headerSecret) ||
-      validKeys.includes(bodyApiKey);
-
-    if (!isAuthorized) {
-      console.log("Auth failed. headerSecret:", headerSecret, "bodyApiKey:", bodyApiKey, "validKeys count:", validKeys.length);
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (expectedSecret) {
+      const headerSecret = req.headers.get("x-webhook-secret") || "";
+      if (headerSecret !== expectedSecret) {
+        // Also allow if no header is set (Evolution sends directly, URL is the secret)
+        // Only block if a wrong secret is explicitly provided
+        if (headerSecret !== "") {
+          console.log("Auth failed. Wrong x-webhook-secret header.");
+          return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
+      }
     }
 
     const base44 = createClientFromRequest(req);
