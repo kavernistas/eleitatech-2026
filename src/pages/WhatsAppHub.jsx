@@ -543,14 +543,32 @@ export default function WhatsAppHub() {
                             <p className={`text-[10px] mb-0.5 ${(isUser || isHuman) ? 'text-right' : 'text-left'} text-muted-foreground`}>
                               {isHuman ? '👤 Marcos (humano)' : isUser ? '🏛️ Lead' : '🤖 IA Jurídica'}
                             </p>
-                            <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                            <div className={`rounded-2xl text-sm leading-relaxed shadow-sm overflow-hidden ${
                               isHuman
                                 ? 'bg-[#25D366] text-white rounded-tr-sm'
                                 : isUser
                                 ? 'bg-navy text-white rounded-tr-sm'
                                 : 'bg-white dark:bg-card border border-border text-foreground rounded-tl-sm'
                             }`}>
-                              {msg.content}
+                              {msg.media_url ? (
+                                <div>
+                                  {msg.media_type === 'imagem' ? (
+                                    <a href={msg.media_url} target="_blank" rel="noopener noreferrer">
+                                      <img src={msg.media_url} alt="Imagem recebida" className="max-w-[220px] max-h-[200px] object-cover rounded-xl" />
+                                    </a>
+                                  ) : msg.media_type === 'áudio' ? (
+                                    <audio controls src={msg.media_url} className="px-3 py-2 max-w-[220px]" />
+                                  ) : (
+                                    <a href={msg.media_url} target="_blank" rel="noopener noreferrer"
+                                      className="flex items-center gap-2 px-3 py-2 hover:opacity-80">
+                                      <FileText size={16} />
+                                      <span className="text-xs underline">{msg.media_type || 'Documento'}</span>
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="px-3 py-2 block">{msg.content}</span>
+                              )}
                             </div>
                             {msg.ts && (
                               <p className={`text-[10px] text-muted-foreground mt-0.5 ${(isUser || isHuman) ? 'text-right' : 'text-left'}`}>

@@ -197,8 +197,55 @@ Deno.serve(async (req) => {
       ts: new Date().toISOString(),
     });
 
-    // Media handler
+    // Media handler — try to fetch media URL from Evolution API
     if (hasMedia) {
+      let mediaUrl = null;
+      let mediaType = "documento";
+
+      if (msg.message?.imageMessage) mediaType = "imagem";
+      else if (msg.message?.audioMessage) mediaType = "áudio";
+      else if (msg.message?.videoMessage) mediaType = "vídeo";
+      else if (msg.message?.documentMessage) {
+        mediaType = msg.message.documentMessage.fileName || "documento";
+      }
+
+      // Try to get media from Evolution API
+      if (EVO_URL && INSTANCE && msg.key?.id) {
+        try {
+          const mediaRes = await fetch(`${EVO_URL}/chat/getBase64FromMediaMessage/${INSTANCE}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": EVO_KEY },
+            body: JSON.stringify({ message: { key: msg.key } }),
+          });
+          if (mediaRes.ok) {
+            const mediaData = await mediaRes.json();
+            const base64 = mediaData.base64 || mediaData.data;
+            const mimeType = mediaData.mimetype || "application/octet-stream";
+            if (base64) {
+              // Convert base64 to blob and upload to Base44 storage
+              const binaryStr = atob(base64);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+              const blob = new Blob([bytes], { type: mimeType });
+              const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
+              mediaUrl = uploadRes?.file_url || null;
+            }
+          }
+        } catch (e) {
+          console.log("Media fetch error:", e.message);
+        }
+      }
+
+      const mediaMsg = {
+        role: "user",
+        content: `[Mídia: ${mediaType}]`,
+        media_url: mediaUrl,
+        media_type: mediaType,
+        ts: new Date().toISOString(),
+      };
+      // Replace the placeholder message we already pushed
+      conversation[conversation.length - 1] = mediaMsg;
+
       const tags = [...new Set([...(contact.tags || []), "Documento_Recebido"])];
       await base44.asServiceRole.entities.Contact.update(contact.id, {
         whatsapp_conversation: conversation,
