@@ -35,9 +35,11 @@ export default function Campaigns() {
     queryFn: () => base44.entities.Campaign.list('-created_date', 50),
   });
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Campaign.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaigns'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['campaigns'] }); setConfirmDeleteId(null); },
   });
 
   const handleNew = () => { setSelected(null); setView('editor'); };
@@ -137,9 +139,20 @@ export default function Campaigns() {
                       <Send size={12} className="mr-1" /> Enviar
                     </Button>
                   )}
-                  <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(campaign.id)} className="text-destructive hover:text-destructive">
-                    <Trash2 size={14} />
-                  </Button>
+                  {confirmDeleteId === campaign.id ? (
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => deleteMutation.mutate(campaign.id)} className="text-[10px] bg-destructive text-white px-2 py-1 rounded font-medium hover:bg-destructive/90">
+                        Confirmar
+                      </button>
+                      <button onClick={() => setConfirmDeleteId(null)} className="text-[10px] text-muted-foreground hover:text-foreground px-1">
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(campaign.id)} className="text-destructive hover:text-destructive">
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

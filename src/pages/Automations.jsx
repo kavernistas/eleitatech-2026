@@ -36,11 +36,6 @@ const triggerColors = {
   tag_added: 'bg-green-100 text-green-700',
 };
 
-const defaultAutomations = [
-  { name: 'Boas-vindas Automático', trigger: 'cadastro_importacao', action: 'send_email', delay_hours: 0, active: true, executions_count: 423 },
-  { name: 'Follow-up Diagnóstico', trigger: 'clique_diagnostico', action: 'notify_crm', delay_hours: 0, active: true, executions_count: 187 },
-  { name: 'WhatsApp Reforço 24h', trigger: 'abandono_24h', action: 'send_whatsapp', delay_hours: 24, active: true, executions_count: 94 },
-];
 
 export default function Automations() {
   const [showNew, setShowNew] = useState(false);
@@ -67,7 +62,7 @@ export default function Automations() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['automations'] }),
   });
 
-  const allAutomations = automations.length > 0 ? automations : defaultAutomations;
+  const allAutomations = automations;
 
   return (
     <div className="p-5 lg:p-7 space-y-6 animate-fade-in">
@@ -106,6 +101,13 @@ export default function Automations() {
 
       {/* Automations list */}
       <div className="space-y-3">
+        {allAutomations.length === 0 && (
+          <div className="text-center py-12 bg-card border border-border rounded-xl">
+            <Zap size={36} className="text-muted-foreground mx-auto mb-2 opacity-25" />
+            <p className="text-muted-foreground font-medium text-sm">Nenhuma automação criada</p>
+            <p className="text-xs text-muted-foreground mt-1">Crie automações para disparos automáticos baseados em comportamento</p>
+          </div>
+        )}
         {allAutomations.map((auto, i) => (
           <div key={auto.id || i} className="bg-card border border-border rounded-xl p-5 flex items-center gap-4">
             <div className="flex-1">
