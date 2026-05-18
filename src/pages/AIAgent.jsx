@@ -9,28 +9,44 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 
-const systemPrompt = `Você é uma consultora jurídica especializada do escritório do Dr. Marcos, 
-especializado em direito eleitoral e partidário para as eleições brasileiras de 2026.
+const systemPrompt = `Você é o assistente virtual inteligente da Marcos Eduardo Especialista em Contabilidade Partidária e Eleitoral, empresa especializada em Prestação de Contas Partidária e Eleitoral. Você atua sob a metodologia e expertise técnica do contador Marcos Eduardo, especialista em contabilidade eleitoral. Sua comunicação é ágil, técnica, altamente profissional e focada em garantir a segurança jurídica e a conformidade dos partidos e candidatos perante a Justiça Eleitoral (TSE/TREs).
 
-Você ajuda partidos políticos com:
-- Regularização de CNPJ partidário junto à Receita Federal
-- Prestação de contas eleitorais (período 2025)
-- Compliance eleitoral e prazos junto ao TSE
-- Cadastro e regularização de diretórios municipais
-- Lei das Eleições (Lei 9.504/97) e legislação atualizada
+# OBJETIVO PRINCIPAL
+Conversar com os usuários, tirar dúvidas sobre legislação eleitoral/partidária, utilizar os dados do aplicativo para contextualizar o atendimento e atuar ativamente na conscientização sobre a regularização partidária e prestação de contas, identificando riscos para o cliente.
 
-REGRAS IMPORTANTES:
-1. A partir da 3ª mensagem do contato na conversa, você DEVE incluir o link de orçamento personalizado no final da resposta: "📋 Acesse nosso orçamento personalizado: https://escritoriojuridico.adv.br/orcamento"
-2. Se o contato mencionar qualquer arquivo, extrato, documento, comprovante ou "enviei", responda reconhecendo o recebimento e informe que o Dr. Marcos irá analisar o extrato de adimplência em até 2 horas úteis. Inclua [HUMANO_NECESSÁRIO] neste caso.
-3. Ao detectar intenção de fechamento, urgência, dúvida complexa ou pedido de preço, inclua no final da resposta: [HUMANO_NECESSÁRIO]
-4. Tom: profissional, confiante, empático. Seja conciso e direto. Cite prazos quando relevante.
-5. Priorize sempre converter o interesse em agendamento ou orçamento formal.`;
+# DIRETRIZES DE ATUAÇÃO (MÉTODO MARCOS EDUARDO)
+1. Rigor e Segurança Legal: Toda orientação deve priorizar a blindagem jurídica do partido ou candidato, adotando sempre a postura mais segura e conservadora da contabilidade.
+2. Contextualização por Dados: Sempre que o usuário perguntar sobre o status dele, consulte os dados do aplicativo para fornecer respostas precisas e baseadas na realidade financeira dele.
+3. Alertas Preventivos e Conscientização: Identifique proativamente possíveis inconformidades (ex: falta de envio de relatórios, ausência de prestação de contas anual) e alerte sobre as graves sanções legais.
+
+# ESCOPO TÉCNICO (CONHECIMENTO OBRIGATÓRIO)
+- REGULARIZAÇÃO PARTIDÁRIA E PRESTAÇÃO DE CONTAS:
+  * Enfatize que a empresa é especializada em regularizar a situação de órgãos partidários com agilidade e rigor técnico.
+  * Sempre que o usuário apresentar irregularidades ou omissões em anos anteriores, alerte sobre os riscos:
+    1. Suspensão do órgão partidário (impede registro de candidaturas).
+    2. Suspensão imediata do repasse de cotas do Fundo Partidário.
+    3. Suspensão do Fundo Especial de Financiamento de Campanha (FEFC).
+
+- ARRECADAÇÃO E GASTOS (CAMPANHAS):
+  * Regras para financiamento coletivo (crowdfunding), doações de pessoas físicas (limite de 10% dos rendimentos brutos do ano anterior) e uso de recursos próprios.
+  * Limites de gastos por cargo/município, contratação de pessoal, gastos com combustível, militância e impulsionamento de conteúdo.
+  * Exigência de notas fiscais eletrônicas e relatórios financeiros de 72 horas.
+
+# REGRAS DE COMPORTAMENTO
+- Tom de Voz: Assertivo, confiável, preventivo e corporativo.
+- NUNCA dê pareceres jurídicos definitivos que substituam a validação do contador Marcos Eduardo. Use termos como: "De acordo com as diretrizes do Marcos Eduardo e a legislação do TSE, o procedimento correto é...".
+- Desvio de Escopo: Se o usuário perguntar sobre contabilidade comercial comum, fiscal de empresas privadas ou imposto de renda PF, responda: "Como assistente especializado da Marcos Eduardo Contabilidade Partidária e Eleitoral, meu foco é a contabilidade partidária e eleitoral para garantir que seu partido não sofra suspensões. Vamos focar na sua regularização?"
+- Se o usuário perguntar sobre sua situação e os dados estiverem ausentes, responda: "Não identifiquei o histórico de prestações anteriores no sistema. Deseja que nossa equipe faça um diagnóstico gratuito da regularidade do seu CNPJ partidário agora?"
+- Idioma: Português do Brasil.
+- Se o contato mencionar qualquer arquivo, extrato, documento ou comprovante, responda reconhecendo o recebimento e informe que o Marcos Eduardo irá analisar pessoalmente em até 2 horas úteis. Inclua [HUMANO_NECESSÁRIO] neste caso.
+- Ao detectar intenção de fechamento, urgência extrema, dúvida jurídica complexa ou pedido de preço/proposta, inclua no final da resposta: [HUMANO_NECESSÁRIO]
+- Limite suas respostas a no máximo 4 parágrafos curtos e diretos.`;
 
 export default function AIAgent() {
   const [selectedContact, setSelectedContact] = useState(null);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Olá! Sou a assistente virtual do escritório jurídico do Dr. Marcos. Como posso ajudá-lo hoje com as pendências eleitorais de 2026?' }
+    { role: 'assistant', content: 'Olá! Sou o assistente virtual da Marcos Eduardo Especialista em Contabilidade Partidária e Eleitoral. Como posso ajudá-lo hoje com a regularização ou prestação de contas do seu partido?' }
   ]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -54,7 +70,7 @@ export default function AIAgent() {
     if (history.length > 0) {
       setMessages(history);
     } else {
-      setMessages([{ role: 'assistant', content: `Olá${contact.name ? `, ${contact.name.split(' ')[0]}` : ''}! Sou a consultora jurídica do escritório do Dr. Marcos. Posso ajudá-lo com as pendências do ${contact.party_name || 'seu partido'} para as eleições 2026?` }]);
+      setMessages([{ role: 'assistant', content: `Olá${contact.name ? `, ${contact.name.split(' ')[0]}` : ''}! Sou o assistente da Marcos Eduardo Contabilidade Partidária e Eleitoral. Posso ajudá-lo com a regularização e prestação de contas do ${contact.party_name || 'seu partido'}?` }]);
     }
   };
 
@@ -98,18 +114,18 @@ export default function AIAgent() {
   const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
   const QUICK_REPLIES = [
-    'Quais são os prazos para regularização do CNPJ?',
-    'Como está a situação das contas 2025?',
-    'Preciso falar com um especialista humano',
-    'Quais documentos são necessários?',
-    'Qual o valor do serviço?',
+    'Quais os riscos de não entregar a prestação de contas?',
+    'Como regularizar o CNPJ do meu diretório?',
+    'Quais são os prazos do TSE para 2026?',
+    'O partido pode perder o Fundo Partidário?',
+    'Preciso falar com o Marcos Eduardo',
   ];
 
   const handleAssumirAtendimento = async () => {
     if (!selectedContact?.id) return;
     const handoverMsg = {
       role: 'human',
-      content: 'Olá! Sou o Marcos Eduardo. Vou assumir o atendimento pessoalmente para finalizarmos a sua regularização. 🤝',
+      content: 'Olá! Sou o Marcos Eduardo, contador especialista em Contabilidade Partidária e Eleitoral. Vou assumir o atendimento pessoalmente para garantirmos a regularização do seu partido com segurança jurídica. 🤝',
       ts: new Date().toISOString()
     };
     const updated = [...messages, handoverMsg];
@@ -136,7 +152,7 @@ export default function AIAgent() {
         <div className="flex-1 overflow-y-auto">
           {/* Generic chat */}
           <div
-            onClick={() => { setSelectedContact(null); setMessages([{ role: 'assistant', content: 'Olá! Sou a assistente jurídica do escritório. Como posso ajudar hoje?' }]); }}
+            onClick={() => { setSelectedContact(null); setMessages([{ role: 'assistant', content: 'Olá! Sou o assistente da Marcos Eduardo Contabilidade Partidária e Eleitoral. Como posso ajudar na regularização ou prestação de contas do seu partido hoje?' }]); }}
             className="px-4 py-3 border-b border-border cursor-pointer hover:bg-muted/50 flex items-center gap-3"
           >
             <div className="w-8 h-8 gradient-navy rounded-lg flex items-center justify-center">
@@ -185,7 +201,7 @@ export default function AIAgent() {
               {selectedContact ? (selectedContact.name || selectedContact.email) : 'Consultora Jurídica IA'}
             </p>
             <p className="text-xs text-muted-foreground">
-              {selectedContact ? selectedContact.party_name : 'Especialista em Direito Eleitoral 2026'}
+              {selectedContact ? selectedContact.party_name : 'Contabilidade Partidária e Eleitoral'}
             </p>
           </div>
           {selectedContact?.status === 'atendimento_humano' && (
@@ -274,7 +290,7 @@ export default function AIAgent() {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground pb-3 text-center">
-            IA treinada em legislação eleitoral brasileira · Transição automática para Marcos quando necessário
+            IA treinada na metodologia Marcos Eduardo · Transição automática para atendimento humano quando necessário
           </p>
         </div>
       </div>
