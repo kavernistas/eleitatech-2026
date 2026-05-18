@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Phone, MapPin, Tag, MessageSquare, Edit2, Save, Plus, Wand2, Bot } from 'lucide-react';
+import { X, Mail, Phone, MapPin, Tag, MessageSquare, Edit2, Save, Plus, Wand2, Bot, Pencil } from 'lucide-react';
 import WhatsAppButton from './WhatsAppButton';
+import EditContactModal from './EditContactModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +17,7 @@ export default function ContactDetail({ contact, statusColors, onClose }) {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(contact.notes || '');
   const [generatingAi, setGeneratingAi] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const qc = useQueryClient();
   const navigate = useNavigate();
 
@@ -70,6 +72,9 @@ Foque em: potencial de fechamento, urgências e próxima ação recomendada.`,
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={() => setShowEditModal(true)} className="p-1.5 rounded-lg hover:bg-muted border border-border" title="Editar contato">
+            <Pencil size={14} className="text-muted-foreground" />
+          </button>
           <WhatsAppButton contact={contact} />
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted lg:hidden">
             <X size={16} />
@@ -204,6 +209,9 @@ Foque em: potencial de fechamento, urgências e próxima ação recomendada.`,
           </div>
           <p className="text-sm text-foreground/80">{contact.ai_summary}</p>
         </div>
+      )}
+      {showEditModal && (
+        <EditContactModal contact={contact} onClose={() => setShowEditModal(false)} />
       )}
     </div>
   );
