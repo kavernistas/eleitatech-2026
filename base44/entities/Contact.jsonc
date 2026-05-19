@@ -150,16 +150,7 @@
     "email"
   ],
   "rls": {
-    "create": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "user"
-          ]
-        }
-      }
-    },
+    "create": {},
     "read": {
       "$or": [
         {
