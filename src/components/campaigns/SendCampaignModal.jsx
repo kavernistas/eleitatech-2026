@@ -28,7 +28,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState(null); // null = todos filtrados
   const [step, setStep] = useState('config');
-  const [delaySeconds, setDelaySeconds] = useState(5);
+  const [delaySeconds, setDelaySeconds] = useState(30);
   const qc = useQueryClient();
 
   const { data: contacts = [] } = useQuery({
@@ -291,6 +291,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
             <div className="bg-muted/60 border border-border rounded-lg p-3 space-y-1.5">
               <p className="text-xs font-semibold text-foreground">⏱ Intervalo entre envios</p>
               <p className="text-[11px] text-muted-foreground">Aguardar entre cada e-mail para evitar bloqueio por spam.</p>
+              <p className="text-[11px] text-warning font-medium">⚠ Gmail limita ~100 e-mails/dia. Use intervalo mínimo de 30s para evitar bloqueio.</p>
               <div className="flex gap-2 flex-wrap pt-0.5">
                 {[0, 3, 5, 10, 15, 30].map(s => (
                   <button

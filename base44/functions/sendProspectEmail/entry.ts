@@ -193,19 +193,47 @@ ${buildUnsubscribeFooter(contact.email)}
 
     const encodedMessage = toBase64url(mimeMessage);
 
-    const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ raw: encodedMessage }),
-    });
+    // Send with retry on 429 rate limit (up to 3 attempts with exponential backoff)
+    let gmailRes;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ raw: encodedMessage }),
+      });
+
+      if (gmailRes.status === 429) {
+        // Rate limited — extract retry-after from error body or use exponential backoff
+        const errBody = await gmailRes.json().catch(() => ({}));
+        const retryAfterMs = (() => {
+          const msg = errBody?.error?.message || '';
+          const match = msg.match(/Retry after (\d{4}-\d{2}-\d{2}T[\d:.]+Z)/);
+          if (match) {
+            const waitMs = new Date(match[1]).getTime() - Date.now();
+            return Math.max(waitMs, 0);
+          }
+          return attempt * 15000; // fallback: 15s, 30s, 45s
+        })();
+        console.warn(`Gmail 429 rate limit (attempt ${attempt}/3). Waiting ${Math.round(retryAfterMs / 1000)}s...`);
+        await new Promise(res => setTimeout(res, retryAfterMs + 1000));
+        continue;
+      }
+
+      if (!gmailRes.ok) {
+        const errData = await gmailRes.text();
+        console.error('Gmail API error status:', gmailRes.status, 'body:', errData);
+        throw new Error(`Gmail API error ${gmailRes.status}: ${errData}`);
+      }
+
+      break; // success
+    }
 
     if (!gmailRes.ok) {
       const errData = await gmailRes.text();
-      console.error('Gmail API error status:', gmailRes.status, 'body:', errData);
-      throw new Error(`Gmail API error ${gmailRes.status}: ${errData}`);
+      throw new Error(`Gmail API error após 3 tentativas: ${gmailRes.status} - ${errData}`);
     }
 
     if (contact.id) {
