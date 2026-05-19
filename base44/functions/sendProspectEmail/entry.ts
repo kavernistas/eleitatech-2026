@@ -7,7 +7,7 @@ function unsubscribeUrl(email) {
   return `${APP_URL}/unsubscribe?e=${encoded}`;
 }
 
-function buildHtml(contact, tpl) {
+function buildHtml(contact, tpl, waNumber = '5511999990000') {
   const name = contact.name || contact.party_name || 'Responsável';
   const party = contact.party_acronym || contact.party_name || '';
   const location = [contact.city, contact.state].filter(Boolean).join('/');
@@ -40,10 +40,11 @@ function buildHtml(contact, tpl) {
     <span style="color:#666;font-size:13px;">${tpl.h2sub}</span>
   </div>
   <table width="100%"><tr><td align="center" style="padding:8px 0 24px;">
-    <a href="https://wa.me/5511999990000?text=Ol%C3%A1%2C+vim+pelo+e-mail+sobre+regulariza%C3%A7%C3%A3o+partid%C3%A1ria"
+    <a href="https://wa.me/${waNumber}?text=Ol%C3%A1%2C+vim+pelo+e-mail+sobre+regulariza%C3%A7%C3%A3o+partid%C3%A1ria"
        style="display:inline-block;background:#25D366;color:#fff;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;">
       💬 Solicitar Diagnóstico Gratuito
     </a>
+
   </td></tr></table>
   <p style="margin:0;font-size:13px;color:#888;line-height:1.6;">
     Responda este e-mail ou acesse nosso WhatsApp para uma análise gratuita da situação do seu partido.
@@ -102,6 +103,19 @@ function buildUnsubscribeFooter(email) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Autenticação: aceita chamadas autenticadas (admin/user) OU webhook interno com secret
+    const webhookSecret = Deno.env.get('WEBHOOK_SECRET');
+    const authHeader = req.headers.get('x-webhook-secret');
+    const isWebhook = webhookSecret && authHeader === webhookSecret;
+
+    if (!isWebhook) {
+      const user = await base44.auth.me();
+      if (!user) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const contact = body.contact || body.data;
     const templateId = body.template_id || 'prospeccao_geral';
@@ -113,6 +127,11 @@ Deno.serve(async (req) => {
     if (contact.email_valid === false) {
       return Response.json({ skipped: true, reason: 'email_invalid' });
     }
+
+    // Busca configurações (incluindo número WhatsApp e credenciais TurboSMTP)
+    const settings = await base44.asServiceRole.entities.AppSettings.list();
+    const settingsMap = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
+    const waNumber = settingsMap['WHATSAPP_CONTACT_NUMBER'] || '5511999990000';
 
     // If html_body and subject are passed directly (from campaign send), use them
     // Otherwise fall back to built-in templates
@@ -168,13 +187,10 @@ ${buildUnsubscribeFooter(contact.email)}
     } else {
       const tpl = TEMPLATES[templateId] || TEMPLATES['prospeccao_geral'];
       subject = tpl.subject(contact);
-      htmlBody = buildHtml(contact, tpl);
+      htmlBody = buildHtml(contact, tpl, waNumber);
     }
 
     // Send via TurboSMTP API (única via de envio)
-    const settings = await base44.asServiceRole.entities.AppSettings.list();
-    const settingsMap = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
-
     const consumerKey = settingsMap['TURBOSMTP_CONSUMER_KEY'];
     const consumerSecret = settingsMap['TURBOSMTP_CONSUMER_SECRET'];
     const fromEmail = settingsMap['TURBOSMTP_FROM_EMAIL'] || 'contato@marcoseduardocontabil.com.br';

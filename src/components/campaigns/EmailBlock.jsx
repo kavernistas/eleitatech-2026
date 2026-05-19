@@ -26,7 +26,8 @@ const WA_TEMPLATES = [
   },
 ];
 
-const WA_NUMBER = ''; // número configurável via AppSettings (WHATSAPP_DEFAULT_NUMBER)
+// Fallback vazio: o número real é sempre salvo em block.wa_number pelo usuário no editor
+const WA_NUMBER_FALLBACK = '';
 
 function buildWhatsAppUrl(number, message) {
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
@@ -96,10 +97,10 @@ export default function EmailBlock({ block, onChange, onRemove, onMoveUp, onMove
                   const tpl = WA_TEMPLATES.find(t => t.id === val);
                   onChange('cta_type', val);
                   if (tpl && val !== 'custom_wa') {
-                    onChange('url', buildWhatsAppUrl(WA_NUMBER, tpl.message));
+                    onChange('url', buildWhatsAppUrl(block.wa_number || WA_NUMBER_FALLBACK, tpl.message));
                     onChange('wa_message', tpl.message);
                   } else if (val === 'custom_wa') {
-                    onChange('url', buildWhatsAppUrl(WA_NUMBER, block.wa_message || ''));
+                    onChange('url', buildWhatsAppUrl(block.wa_number || WA_NUMBER_FALLBACK, block.wa_message || ''));
                     onChange('wa_message', block.wa_message || '');
                   }
                 }
@@ -138,7 +139,7 @@ export default function EmailBlock({ block, onChange, onRemove, onMoveUp, onMove
             {block.cta_type && block.cta_type !== 'custom' && (
               <div className="space-y-1.5 bg-green-50 border border-green-200 rounded-lg p-2.5">
                 <Input
-                  value={block.wa_number || WA_NUMBER}
+                  value={block.wa_number || WA_NUMBER_FALLBACK}
                   onChange={e => {
                     const num = e.target.value;
                     onChange('wa_number', num);
@@ -151,7 +152,7 @@ export default function EmailBlock({ block, onChange, onRemove, onMoveUp, onMove
                   value={block.wa_message || (WA_TEMPLATES.find(t => t.id === block.cta_type)?.message || '')}
                   onChange={e => {
                     onChange('wa_message', e.target.value);
-                    onChange('url', buildWhatsAppUrl(block.wa_number || WA_NUMBER, e.target.value));
+                    onChange('url', buildWhatsAppUrl(block.wa_number || WA_NUMBER_FALLBACK, e.target.value));
                   }}
                   className="text-xs resize-none min-h-[60px] bg-white"
                   placeholder="Mensagem do WhatsApp (pode usar placeholders como {{sigla_partido}}, {{cidade}})"

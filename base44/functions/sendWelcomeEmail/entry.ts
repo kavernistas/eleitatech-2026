@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-function buildHtml(contact) {
+function buildHtml(contact, waNumber = '5511999990000') {
   const name = contact.name || contact.party_name || 'Responsável';
   const party = contact.party_acronym || contact.party_name || '';
   const location = [contact.city, contact.state].filter(Boolean).join('/');
@@ -33,7 +33,7 @@ function buildHtml(contact) {
     <span style="color:#666;font-size:13px;">Relatórios · Adequação · Recursos administrativos</span>
   </div>
   <table width="100%"><tr><td align="center" style="padding:8px 0 24px;">
-    <a href="https://wa.me/5511999990000?text=Ol%C3%A1%2C+vim+pelo+e-mail+sobre+regulariza%C3%A7%C3%A3o+partid%C3%A1ria"
+    <a href="https://wa.me/${waNumber}?text=Ol%C3%A1%2C+vim+pelo+e-mail+sobre+regulariza%C3%A7%C3%A3o+partid%C3%A1ria"
        style="display:inline-block;background:#25D366;color:#fff;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;">
       💬 Solicitar Diagnóstico Gratuito
     </a>
@@ -66,6 +66,19 @@ function toBase64url(str) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Autenticação: aceita chamadas autenticadas (admin/user) OU webhook interno com secret
+    const webhookSecret = Deno.env.get('WEBHOOK_SECRET');
+    const authHeader = req.headers.get('x-webhook-secret');
+    const isWebhook = webhookSecret && authHeader === webhookSecret;
+
+    if (!isWebhook) {
+      const user = await base44.auth.me();
+      if (!user) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const contact = body.contact || body.data;
 
@@ -77,13 +90,18 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'email_invalid' });
     }
 
+    // Busca número do WhatsApp das configurações
+    const settings = await base44.asServiceRole.entities.AppSettings.list();
+    const cfg = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
+    const waNumber = cfg['WHATSAPP_CONTACT_NUMBER'] || '5511999990000';
+
     const subject = contact.party_name
       ? `${contact.party_acronym || contact.party_name} - Regularização Partidária 2026 - Diagnóstico Gratuito`
       : `Regularização Partidária 2026 - Diagnóstico Gratuito para seu Diretório`;
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
 
-    const htmlBody = buildHtml(contact);
+    const htmlBody = buildHtml(contact, waNumber);
     const encodedSubject = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
     const bodyBase64 = toBase64url(htmlBody);
 
