@@ -105,13 +105,11 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const cfg = await getSettings(base44);
 
-  // ── Optional secret validation ─────────────────────────────────────────────
-  if (cfg.webhookSecret) {
-    const headerSecret = req.headers.get("x-webhook-secret") || req.headers.get("authorization")?.replace("Bearer ", "");
-    const querySecret = new URL(req.url).searchParams.get("secret");
-    if (headerSecret !== cfg.webhookSecret && querySecret !== cfg.webhookSecret) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  // ── Secret validation (obrigatório) ───────────────────────────────────────
+  const headerSecret = req.headers.get("x-webhook-secret") || req.headers.get("authorization")?.replace("Bearer ", "");
+  const querySecret = new URL(req.url).searchParams.get("secret");
+  if (!cfg.webhookSecret || (headerSecret !== cfg.webhookSecret && querySecret !== cfg.webhookSecret)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const lead = extractLeadData(body);
