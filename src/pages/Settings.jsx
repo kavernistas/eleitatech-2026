@@ -11,6 +11,7 @@ import SchedulingLinkSettings from '@/components/settings/SchedulingLinkSettings
 import ApiKeysSettings from '@/components/settings/ApiKeysSettings';
 import WebhookDocs from '@/components/settings/WebhookDocs';
 import SmtpImapSettings from '@/components/settings/SmtpImapSettings';
+import TurboSmtpSettings from '@/components/settings/TurboSmtpSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,7 @@ import { Separator } from '@/components/ui/separator';
 const tabs = [
   { id: 'perfil', label: 'Perfil do Escritório', icon: Building2 },
   { id: 'remetente', label: 'Remetente de E-mail', icon: Mail },
+  { id: 'turbosmtp', label: 'TurboSMTP (E-mail)', icon: Mail },
   { id: 'integracoes', label: 'Integrações', icon: Sheet },
   { id: 'notificacoes', label: 'Notificações', icon: Bell },
   { id: 'seguranca', label: 'Segurança', icon: Shield },
@@ -208,6 +210,10 @@ export default function Settings() {
             </>
           )}
 
+          {activeTab === 'turbosmtp' && (
+            <TurboSmtpSettings />
+          )}
+
           {activeTab === 'integracoes' && (
             <>
               <h2 className="text-base font-semibold text-foreground">Integrações Externas</h2>
@@ -300,7 +306,7 @@ export default function Settings() {
             </>
           )}
 
-          {['perfil', 'remetente', 'notificacoes'].includes(activeTab) && (
+          {['perfil', 'remetente', 'notificacoes'].includes(activeTab) && activeTab !== 'turbosmtp' && (
             <div className="pt-2">
               <Button onClick={handleSave} disabled={saveMutation.isPending} className="bg-navy text-white hover:bg-navy/90">
                 {saved ? <><Check size={13} className="mr-1.5 text-success" />Salvo!</> : <><Save size={13} className="mr-1.5" />Salvar Alterações</>}
