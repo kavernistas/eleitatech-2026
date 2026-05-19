@@ -1,17 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import nodemailer from 'npm:nodemailer@6.9.9';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.hostinger.com',
-  port: 587,
-  secure: false, // STARTTLS
-  requireTLS: true,
-  auth: {
-    user: 'contato@marcoseduardocontabil.com.br',
-    pass: Deno.env.get('SMTP_PASSWORD'),
-  },
-});
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -24,13 +13,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Campos obrigatórios: to, subject, html ou text' }, { status: 400 });
     }
 
+    // Busca credenciais SMTP do AppSettings
+    const settings = await base44.asServiceRole.entities.AppSettings.list();
+    const cfg = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
+
+    const smtpUser = cfg['SMTP_USER'] || cfg['TURBOSMTP_FROM_EMAIL'] || 'contato@marcoseduardocontabil.com.br';
+    const smtpPass = Deno.env.get('SMTP_PASSWORD');
+    const smtpHost = cfg['SMTP_HOST'] || 'smtp.hostinger.com';
+    const smtpPort = parseInt(cfg['SMTP_PORT'] || '587', 10);
+    const defaultFromName = cfg['TURBOSMTP_FROM_NAME'] || 'Marcos Eduardo - Contador Partidário e Eleitoral';
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: false,
+      requireTLS: true,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+
     const info = await transporter.sendMail({
-      from: `"${from_name || 'Marcos Eduardo - Contador Partidário e Eleitoral'}" <contato@marcoseduardocontabil.com.br>`,
+      from: `"${from_name || defaultFromName}" <${smtpUser}>`,
       to,
       subject,
       html: html || undefined,
       text: text || undefined,
-      replyTo: reply_to || 'contato@marcoseduardocontabil.com.br',
+      replyTo: reply_to || smtpUser,
     });
 
     return Response.json({ ok: true, message_id: info.messageId });
