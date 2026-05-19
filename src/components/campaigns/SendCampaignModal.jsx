@@ -111,28 +111,54 @@ export default function SendCampaignModal({ campaign, onClose }) {
   };
 
   const [sentCount, setSentCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
+  const [lastError, setLastError] = useState(null);
 
   const sleep = (ms) => new Promise(res => setTimeout(res, ms));
 
   const handleSend = async () => {
     setStep('sending');
     setSentCount(0);
+    setErrorCount(0);
+    setLastError(null);
 
     let sent = 0;
+    let errors = 0;
     for (const contact of recipients) {
       try {
-        await base44.functions.invoke('sendProspectEmail', {
+        const res = await base44.functions.invoke('sendProspectEmail', {
           contact,
           subject: campaign.subject_a || campaign.name,
           html_body: campaign.html_body,
         });
-        sent++;
-        setSentCount(sent);
-        if (sent < recipients.length && delaySeconds > 0) {
+        // Se a função retornou erro no body mesmo com status 200
+        if (res?.data?.error) {
+          errors++;
+          setErrorCount(errors);
+          setLastError(res.data.error);
+          // Se todos os 3 primeiros falharem, aborta para não continuar em loop
+          if (errors >= 3 && sent === 0) {
+            setStep('error');
+            return;
+          }
+        } else {
+          sent++;
+          setSentCount(sent);
+        }
+        if (sent + errors < recipients.length && delaySeconds > 0) {
           await sleep(delaySeconds * 1000);
         }
       } catch (err) {
-        console.error('Erro ao enviar para', contact.email, err.message);
+        errors++;
+        setErrorCount(errors);
+        const msg = err?.response?.data?.error || err.message;
+        setLastError(msg);
+        console.error('Erro ao enviar para', contact.email, msg);
+        // Aborta se os 3 primeiros já falharam (evita loop longo inútil)
+        if (errors >= 3 && sent === 0) {
+          setStep('error');
+          return;
+        }
       }
     }
 
@@ -356,10 +382,33 @@ export default function SendCampaignModal({ campaign, onClose }) {
               <p className="text-sm text-muted-foreground mt-1">
                 {sentCount} de {recipients.length} e-mails enviados
               </p>
+              {errorCount > 0 && (
+                <p className="text-xs text-destructive mt-0.5">{errorCount} erro(s) até agora</p>
+              )}
               {delaySeconds > 0 && (
                 <p className="text-xs text-muted-foreground mt-0.5">Intervalo de {delaySeconds}s entre envios</p>
               )}
             </div>
+          </div>
+        )}
+
+        {step === 'error' && (
+          <div className="py-8 flex flex-col items-center gap-4">
+            <div className="w-14 h-14 bg-destructive/10 rounded-full flex items-center justify-center">
+              <AlertTriangle size={28} className="text-destructive" />
+            </div>
+            <div className="text-center space-y-2">
+              <p className="font-semibold text-destructive">Falha no envio</p>
+              <p className="text-sm text-muted-foreground">Os primeiros envios falharam. Verifique as configurações do TurboSMTP.</p>
+              {lastError && (
+                <div className="bg-destructive/5 border border-destructive/20 rounded-lg px-4 py-2 text-xs text-destructive font-mono max-w-sm break-all">
+                  {lastError.includes('nocredit')
+                    ? '⚠ Conta TurboSMTP sem créditos. Recarregue em pro.turbo-smtp.com.'
+                    : lastError}
+                </div>
+              )}
+            </div>
+            <Button onClick={() => setStep('config')} variant="outline">Voltar</Button>
           </div>
         )}
 
