@@ -55,6 +55,7 @@ function buildHtml(contact, tpl) {
   <p style="margin:4px 0 0;font-size:12px;color:#bbb;">contato@marcoseduardocontabil.com.br</p>
   <p style="margin:4px 0 0;font-size:11px;color:#ccc;">Você recebeu este e-mail pois seu diretório consta em nossa base de prospecção para 2026.</p>
   <p style="margin:8px 0 0;font-size:11px;color:#ccc;">Não deseja mais receber nossos e-mails? <a href="${unsubscribeUrl(contact.email)}" style="color:#1a3a6b;text-decoration:underline;">Clique aqui para se descadastrar</a>.</p>
+  <p style="margin:10px 0 0;font-size:11px;color:#aaa;">Quer acessar nossa plataforma de gestão eleitoral? <a href="https://eleita-tech-2026.base44.app" style="color:#2d5fa6;font-weight:600;text-decoration:underline;">Cadastre-se no sistema LegalTech →</a></p>
 </td></tr>
 </table>
 </td></tr>
@@ -94,6 +95,7 @@ function buildUnsubscribeFooter(email) {
   <p style="margin:4px 0 0;font-size:12px;color:#bbb;">contato@marcoseduardocontabil.com.br</p>
   <p style="margin:4px 0 0;font-size:11px;color:#ccc;">Você recebeu este e-mail pois seu diretório consta em nossa base de prospecção para 2026.</p>
   <p style="margin:8px 0 0;font-size:11px;color:#ccc;">Não deseja mais receber nossos e-mails? <a href="${unsubscribeUrl(email)}" style="color:#1a3a6b;text-decoration:underline;">Clique aqui para se descadastrar</a>.</p>
+  <p style="margin:10px 0 0;font-size:11px;color:#aaa;">Quer acessar nossa plataforma de gestão eleitoral? <a href="https://eleita-tech-2026.base44.app" style="color:#2d5fa6;font-weight:600;text-decoration:underline;">Cadastre-se no sistema LegalTech →</a></p>
 </td></tr>`;
 }
 
