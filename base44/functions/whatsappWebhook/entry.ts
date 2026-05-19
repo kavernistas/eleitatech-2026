@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.28';
 
-const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY");
-const EVOLUTION_APIKEY = Deno.env.get("EVOLUTION_API_KEY") || "";
+// Segredos carregados dinamicamente do AppSettings ou env vars (não no módulo top-level)
 
 const SYSTEM_PROMPT = `Você é um assistente jurídico especializado em direito eleitoral e partidário brasileiro, 
 representando o escritório do Dr. Marcos Eduardo. 
@@ -115,8 +114,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Webhook not configured" }, { status: 503 });
     }
     const headerSecret = req.headers.get("x-webhook-secret") || "";
-    const querySecret = new URL(req.url).searchParams.get("secret") || "";
-    if (headerSecret !== expectedSecret && querySecret !== expectedSecret) {
+    if (headerSecret !== expectedSecret) {
       console.log("Auth failed. Wrong webhook secret.");
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -135,8 +133,9 @@ Deno.serve(async (req) => {
     let EVO_URL = getSetting('EVOLUTION_API_URL');
     if (EVO_URL && !EVO_URL.startsWith('http')) EVO_URL = 'http://' + EVO_URL;
     EVO_URL = EVO_URL.replace(/\/$/, '');
-    const EVO_KEY = getSetting('EVOLUTION_API_KEY') || EVOLUTION_APIKEY;
+    const EVO_KEY = getSetting('EVOLUTION_API_KEY');
     const INSTANCE = getSetting('EVOLUTION_INSTANCE_NAME');
+    const OPENAI_KEY = getSetting('OPENAI_API_KEY');
 
     // Only handle messages.upsert
     if (body.event !== "messages.upsert") return Response.json({ ok: true });

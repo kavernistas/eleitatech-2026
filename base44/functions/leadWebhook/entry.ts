@@ -107,8 +107,7 @@ Deno.serve(async (req) => {
 
   // ── Secret validation (obrigatório) ───────────────────────────────────────
   const headerSecret = req.headers.get("x-webhook-secret") || req.headers.get("authorization")?.replace("Bearer ", "");
-  const querySecret = new URL(req.url).searchParams.get("secret");
-  if (!cfg.webhookSecret || (headerSecret !== cfg.webhookSecret && querySecret !== cfg.webhookSecret)) {
+  if (!cfg.webhookSecret || headerSecret !== cfg.webhookSecret) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

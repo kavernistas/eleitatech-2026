@@ -93,10 +93,11 @@ Deno.serve(async (req) => {
       return Response.json({ skipped: true, reason: 'email_invalid' });
     }
 
-    // Busca número do WhatsApp das configurações
-    const settings = await base44.asServiceRole.entities.AppSettings.list();
-    const cfg = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
+    // Busca configurações dinâmicas (WhatsApp, e-mail de contato)
+    const settingsList = await base44.asServiceRole.entities.AppSettings.list();
+    const cfg = settingsList.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
     const waNumber = cfg['WHATSAPP_CONTACT_NUMBER'] || '5511999990000';
+    const replyToEmail = cfg['CONTACT_EMAIL'] || cfg['TURBOSMTP_FROM_EMAIL'] || Deno.env.get('CONTACT_EMAIL') || 'contato@marcoseduardocontabil.com.br';
 
     const subject = contact.party_name
       ? `${contact.party_acronym || contact.party_name} - Regularização Partidária 2026 - Diagnóstico Gratuito`
@@ -110,7 +111,7 @@ Deno.serve(async (req) => {
 
     const mimeMessage = [
       `To: ${contact.email}`,
-      `Reply-To: Marcos Eduardo <contato@marcoseduardocontabil.com.br>`,
+      `Reply-To: Marcos Eduardo <${replyToEmail}>`,
       `Subject: ${encodedSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset="UTF-8"',

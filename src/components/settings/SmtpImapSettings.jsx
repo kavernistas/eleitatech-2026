@@ -1,4 +1,6 @@
 import { Server, Lock, Mail, Info } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 
 const servers = [
   {
@@ -31,6 +33,13 @@ const servers = [
 ];
 
 export default function SmtpImapSettings() {
+  const { data: settings = [] } = useQuery({
+    queryKey: ['app-settings-smtp'],
+    queryFn: () => base44.entities.AppSettings.list(),
+  });
+  const cfg = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
+  const contactEmail = cfg['CONTACT_EMAIL'] || cfg['TURBOSMTP_FROM_EMAIL'] || 'contato@marcoseduardocontabil.com.br';
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-1">
@@ -41,7 +50,7 @@ export default function SmtpImapSettings() {
       <div className="bg-gold/10 border border-gold/30 rounded-lg p-3 flex gap-2 text-xs text-foreground">
         <Info size={13} className="text-gold flex-shrink-0 mt-0.5" />
         <div>
-          <strong>Conta:</strong> contato@marcoseduardocontabil.com.br — Hostinger<br />
+          <strong>Conta:</strong> {contactEmail} — Hostinger<br />
           Use estas configurações no seu cliente de e-mail (Outlook, Thunderbird, Apple Mail etc.)
         </div>
       </div>
@@ -86,7 +95,7 @@ export default function SmtpImapSettings() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
           <div className="bg-background border border-border rounded-lg px-3 py-2">
             <p className="text-[10px] text-muted-foreground mb-0.5">Usuário / Login</p>
-            <p className="font-mono font-medium text-foreground">contato@marcoseduardocontabil.com.br</p>
+            <p className="font-mono font-medium text-foreground">{contactEmail}</p>
           </div>
           <div className="bg-background border border-border rounded-lg px-3 py-2">
             <p className="text-[10px] text-muted-foreground mb-0.5">Senha</p>
