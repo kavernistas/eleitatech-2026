@@ -4,6 +4,17 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Aceita chamadas de admin autenticado OU scheduler interno com WEBHOOK_SECRET
+    const webhookSecret = Deno.env.get('WEBHOOK_SECRET');
+    const headerSecret = req.headers.get('x-webhook-secret');
+    const isScheduler = webhookSecret && headerSecret === webhookSecret;
+
+    if (!isScheduler) {
+      const user = await base44.auth.me();
+      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      if (user.role !== 'admin') return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
+
     // Fetch all scheduled campaigns using service role (called by scheduler)
     const campaigns = await base44.asServiceRole.entities.Campaign.filter({ status: 'agendado' }, '-scheduled_at', 50);
 
