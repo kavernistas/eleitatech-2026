@@ -101,7 +101,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-3">
           <a
-            href="https://eleita-tech-2026.base44.app"
+            href="https://partido-legal-flow.base44.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 bg-navy text-white px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-navy/90 transition-colors"
