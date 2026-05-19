@@ -184,7 +184,7 @@ ${buildUnsubscribeFooter(contact.email)}
       throw new Error('TurboSMTP não configurado. Adicione TURBOSMTP_CONSUMER_KEY e TURBOSMTP_CONSUMER_SECRET nas Configurações → API Keys.');
     }
 
-    const turboRes = await fetch('https://pro.api.serversmtp.com/api/v2/mail/send', {
+    const turboRes = await fetch('https://api.turbo-smtp.com/api/v2/mail/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -192,8 +192,7 @@ ${buildUnsubscribeFooter(contact.email)}
         'consumerSecret': consumerSecret,
       },
       body: JSON.stringify({
-        from: fromEmail,
-        from_name: fromName,
+        from: `${fromName} <${fromEmail}>`,
         to: contact.email,
         subject: subject,
         html_content: htmlBody,

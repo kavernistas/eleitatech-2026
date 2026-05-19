@@ -9,7 +9,7 @@
  */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const TURBOSMTP_SEND_URL = 'https://pro.api.serversmtp.com/api/v2/mail/send';
+const TURBOSMTP_SEND_URL = 'https://api.turbo-smtp.com/api/v2/mail/send';
 
 Deno.serve(async (req) => {
   try {
@@ -48,12 +48,11 @@ Deno.serve(async (req) => {
         'consumerSecret': consumerSecret,
       },
       body: JSON.stringify({
-        from: finalFromEmail,
-        from_name: finalFromName,
-        to: to,
+        from: `${finalFromName} <${finalFromEmail}>`,
+        to: Array.isArray(to) ? to.join(',') : to,
         subject: subject,
         html_content: html_body,
-        content: html_body.replace(/<[^>]+>/g, ''), // fallback texto simples
+        content: html_body.replace(/<[^>]+>/g, ''),
       }),
     });
 
