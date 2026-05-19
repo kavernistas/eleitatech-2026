@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import {
   Users, Mail, MousePointer, TrendingUp,
   Scale, Clock, AlertTriangle, CheckCircle2,
-  BarChart3, Send, Wifi, WifiOff
+  BarChart3, Send, Wifi, WifiOff, ExternalLink
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import KpiCard from '@/components/dashboard/KpiCard';
@@ -99,9 +99,20 @@ export default function Dashboard() {
           <h1 className="font-playfair text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Eleições 2026 · {contacts.length} contatos ativos</p>
         </div>
-        <div className="flex items-center gap-2 bg-success/10 text-success px-3 py-1.5 rounded-full text-xs font-semibold">
-          <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
-          Sistema Ativo
+        <div className="flex items-center gap-3">
+          <a
+            href="https://eleita-tech-2026.base44.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-navy text-white px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-navy/90 transition-colors"
+          >
+            <ExternalLink size={12} />
+            Cadastrar no LegalTech
+          </a>
+          <div className="flex items-center gap-2 bg-success/10 text-success px-3 py-1.5 rounded-full text-xs font-semibold">
+            <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+            Sistema Ativo
+          </div>
         </div>
       </div>
 
