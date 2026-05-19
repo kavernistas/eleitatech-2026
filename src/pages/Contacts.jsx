@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import {
   Search, Filter, Plus, Upload, Download, Tag,
   Mail, Phone, MapPin, Clock, ChevronRight,
-  CheckCircle, AlertCircle, Circle, Star, Users, X, Trash2
+  CheckCircle, AlertCircle, Circle, Star, Users, X, Trash2, ExternalLink
 } from 'lucide-react';
 
 function exportToCSV(contacts) {
@@ -167,6 +167,15 @@ export default function Contacts() {
                 <Button variant="outline" size="sm" onClick={() => { setSelectionMode(true); setSelectedIds(new Set()); setSelectedContact(null); }}>
                   <Mail size={14} className="mr-1.5" /> Disparar E-mails
                 </Button>
+                <a
+                  href="https://partido-legal-flow.base44.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button size="sm" variant="outline" className="border-gold text-gold hover:bg-gold/10">
+                    <ExternalLink size={14} className="mr-1.5" /> Captação Online
+                  </Button>
+                </a>
                 <Button size="sm" className="bg-navy text-white hover:bg-navy/90" onClick={() => setShowNew(true)}>
                   <Plus size={14} className="mr-1.5" /> Novo Contato
                 </Button>
