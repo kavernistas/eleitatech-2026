@@ -19,6 +19,12 @@ import Analytics from '@/pages/Analytics';
 import Settings from '@/pages/Settings';
 import WhatsAppHub from '@/pages/WhatsAppHub';
 
+const PublicRoutes = () => (
+  <Routes>
+    <Route path="/cadastrar-contato" element={<CadastrarContato />} />
+  </Routes>
+);
+
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
@@ -67,7 +73,7 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          {window.location.pathname === '/cadastrar-contato' ? <PublicRoutes /> : <AuthenticatedApp />}
         </Router>
         <Toaster />
       </QueryClientProvider>
