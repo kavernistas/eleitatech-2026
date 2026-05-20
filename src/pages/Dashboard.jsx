@@ -34,7 +34,18 @@ const STATUS_LABELS = {
 export default function Dashboard() {
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts-dashboard'],
-    queryFn: () => base44.entities.Contact.list('-created_date', 2000),
+    queryFn: async () => {
+      const pageSize = 500;
+      let all = [];
+      let page = 0;
+      while (true) {
+        const batch = await base44.entities.Contact.list('-created_date', pageSize, page * pageSize);
+        all = all.concat(batch);
+        if (batch.length < pageSize) break;
+        page++;
+      }
+      return all;
+    },
   });
 
   const { data: campaigns = [] } = useQuery({
