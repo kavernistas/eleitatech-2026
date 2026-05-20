@@ -238,21 +238,36 @@ export default function Contacts() {
               </SelectContent>
             </Select>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-44 h-8 text-xs">
-                <SelectValue placeholder="Status CRM" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status CRM</SelectItem>
-                <SelectItem value="novo">Novo</SelectItem>
-                <SelectItem value="contato_feito">Contato Feito</SelectItem>
-                <SelectItem value="interessado">Interessado</SelectItem>
-                <SelectItem value="proposta_enviada">Proposta Enviada</SelectItem>
-                <SelectItem value="fechado">Fechado</SelectItem>
-                <SelectItem value="atendimento_humano">Atendimento Humano</SelectItem>
-                <SelectItem value="inativo">Inativo</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1.5">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-44 h-8 text-xs">
+                  <SelectValue placeholder="Status CRM" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status CRM</SelectItem>
+                  <SelectItem value="novo">Novo</SelectItem>
+                  <SelectItem value="contato_feito">Contato Feito</SelectItem>
+                  <SelectItem value="interessado">Interessado</SelectItem>
+                  <SelectItem value="proposta_enviada">Proposta Enviada</SelectItem>
+                  <SelectItem value="fechado">Fechado</SelectItem>
+                  <SelectItem value="atendimento_humano">Atendimento Humano</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+              {statusFilter !== 'all' && filtered.length > 0 && (
+                <Button
+                  size="sm"
+                  className="h-8 text-xs bg-navy text-white hover:bg-navy/90 whitespace-nowrap"
+                  onClick={() => {
+                    setSelectedIds(new Set(filtered.map(c => c.id)));
+                    setShowBulkEmail(true);
+                  }}
+                >
+                  <Mail size={12} className="mr-1" />
+                  Disparar ({filtered.length})
+                </Button>
+              )}
+            </div>
 
             {activeFilterCount > 0 && (
               <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground"
