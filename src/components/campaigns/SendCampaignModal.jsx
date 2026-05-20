@@ -9,18 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 
-const STATUS_LABELS = {
-  all: 'Todos os status',
-  novo: 'Novos',
-  contato_feito: 'Contato Feito',
-  interessado: 'Interessados',
-  proposta_enviada: 'Proposta Enviada',
-};
+const STATUS_OPTIONS = [
+  { value: 'novo', label: 'Novo', color: 'bg-slate-100 text-slate-700 border-slate-300' },
+  { value: 'contato_feito', label: 'Contato Feito', color: 'bg-blue-50 text-blue-700 border-blue-300' },
+  { value: 'interessado', label: 'Interessado', color: 'bg-yellow-50 text-yellow-700 border-yellow-300' },
+  { value: 'proposta_enviada', label: 'Proposta Enviada', color: 'bg-purple-50 text-purple-700 border-purple-300' },
+  { value: 'fechado', label: 'Fechado', color: 'bg-green-50 text-green-700 border-green-300' },
+  { value: 'atendimento_humano', label: 'Atendimento Humano', color: 'bg-orange-50 text-orange-700 border-orange-300' },
+  { value: 'inativo', label: 'Inativo', color: 'bg-red-50 text-red-700 border-red-300' },
+];
 
 const TAG_OPTIONS = ['Urgente', 'Pendência 2024', 'CNPJ', 'Contas 2025'];
 
 export default function SendCampaignModal({ campaign, onClose }) {
-  const [statusFilter, setStatusFilter] = useState('all');
+  // null = todos os status; Set = status específicos selecionados
+  const [statusFilter, setStatusFilter] = useState(null);
   const [tagFilter, setTagFilter] = useState(null);
   const [ufFilter, setUfFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
@@ -66,7 +69,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
   const filtered = useMemo(() => contacts.filter(c => {
     if (!c.email) return false;
     if (c.email_valid === false) return false;
-    if (statusFilter !== 'all' && c.status !== statusFilter) return false;
+    if (statusFilter && statusFilter.size > 0 && !statusFilter.has(c.status || 'novo')) return false;
     if (tagFilter && !(c.tags || []).includes(tagFilter)) return false;
     if (ufFilter !== 'all' && c.state !== ufFilter) return false;
     if (cityFilter !== 'all' && c.city !== cityFilter) return false;
@@ -104,7 +107,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
   const clearAll = () => setSelectedIds(new Set());
 
   const resetFilters = () => {
-    setStatusFilter('all'); setTagFilter(null);
+    setStatusFilter(null); setTagFilter(null);
     setUfFilter('all'); setCityFilter('all');
     setPartyFilter('all'); setSearch('');
     setSelectedIds(null);
@@ -197,19 +200,58 @@ export default function SendCampaignModal({ campaign, onClose }) {
                 </button>
               </div>
 
-              {/* Row 1: Status + UF */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Status</p>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Status CRM multi-select */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-xs text-muted-foreground">Status CRM</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setStatusFilter(null)} className="text-[11px] text-navy hover:underline">Todos</button>
+                    <span className="text-muted-foreground text-[11px]">·</span>
+                    <button onClick={() => setStatusFilter(new Set())} className="text-[11px] text-muted-foreground hover:text-destructive">Nenhum</button>
+                  </div>
                 </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {STATUS_OPTIONS.map(opt => {
+                    const active = statusFilter === null || statusFilter.has(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          if (statusFilter === null) {
+                            // Desmarcar este: criar set com todos exceto este
+                            const s = new Set(STATUS_OPTIONS.map(o => o.value));
+                            s.delete(opt.value);
+                            setStatusFilter(s);
+                          } else {
+                            const s = new Set(statusFilter);
+                            if (s.has(opt.value)) s.delete(opt.value);
+                            else s.add(opt.value);
+                            setStatusFilter(s.size === STATUS_OPTIONS.length ? null : s);
+                          }
+                        }}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                          active
+                            ? opt.color + ' font-medium'
+                            : 'bg-white text-muted-foreground border-border opacity-40'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {statusFilter && statusFilter.size > 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {statusFilter.size} status selecionado{statusFilter.size > 1 ? 's' : ''}
+                  </p>
+                )}
+                {statusFilter && statusFilter.size === 0 && (
+                  <p className="text-[11px] text-destructive mt-1">Nenhum status selecionado — nenhum contato será incluído</p>
+                )}
+              </div>
+
+              {/* Row: UF + Cidade */}
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">UF</p>
                   <Select value={ufFilter} onValueChange={v => { setUfFilter(v); setCityFilter('all'); }}>
@@ -220,10 +262,6 @@ export default function SendCampaignModal({ campaign, onClose }) {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              {/* Row 2: Cidade + Partido */}
-              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Cidade</p>
                   <Select value={cityFilter} onValueChange={setCityFilter}>
@@ -234,6 +272,10 @@ export default function SendCampaignModal({ campaign, onClose }) {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Row: Partido */}
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Partido</p>
                   <Select value={partyFilter} onValueChange={setPartyFilter}>
@@ -299,7 +341,10 @@ export default function SendCampaignModal({ campaign, onClose }) {
                       <Checkbox checked={isSelected(c.id)} onCheckedChange={() => toggleSelect(c.id)} className="h-3.5 w-3.5" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate">{c.name || c.email}</p>
-                        <p className="text-xs text-muted-foreground truncate">{c.email} {c.party_acronym ? `· ${c.party_acronym}` : ''} {c.state ? `· ${c.state}` : ''}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs text-muted-foreground truncate">{c.email} {c.party_acronym ? `· ${c.party_acronym}` : ''} {c.state ? `· ${c.state}` : ''}</p>
+                          {c.status && (() => { const opt = STATUS_OPTIONS.find(o => o.value === c.status); return opt ? <span className={`text-[10px] px-1.5 py-0.5 rounded-full border shrink-0 ${opt.color}`}>{opt.label}</span> : null; })()}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -356,6 +401,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
               <div className="space-y-1 text-muted-foreground text-xs">
                 <div className="flex justify-between"><span>Campanha:</span><span className="font-medium text-foreground">{campaign.name}</span></div>
                 <div className="flex justify-between"><span>Assunto:</span><span className="font-medium text-foreground truncate max-w-[200px]">{campaign.subject_a}</span></div>
+                <div className="flex justify-between"><span>Status CRM:</span><span className="font-medium text-foreground">{statusFilter === null ? 'Todos' : statusFilter.size === 0 ? 'Nenhum' : [...statusFilter].map(s => STATUS_OPTIONS.find(o => o.value === s)?.label).join(', ')}</span></div>
                 <div className="flex justify-between"><span>UF:</span><span className="font-medium text-foreground">{ufFilter === 'all' ? 'Todos' : ufFilter}</span></div>
                 <div className="flex justify-between"><span>Cidade:</span><span className="font-medium text-foreground">{cityFilter === 'all' ? 'Todas' : cityFilter}</span></div>
                 <div className="flex justify-between"><span>Partido:</span><span className="font-medium text-foreground">{partyFilter === 'all' ? 'Todos' : partyFilter}</span></div>
