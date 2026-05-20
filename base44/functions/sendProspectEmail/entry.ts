@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const APP_URL = Deno.env.get('APP_PUBLIC_URL') || 'https://eleita-tech-2026.base44.app';
+const TRACK_BASE = `${APP_URL}/functions/trackEmail`;
 
 function unsubscribeUrl(email) {
   const encoded = btoa(unescape(encodeURIComponent(email)));
@@ -100,6 +101,30 @@ function buildUnsubscribeFooter(email) {
 </td></tr>`;
 }
 
+function injectTracking(html, campaignId, contactId) {
+  if (!campaignId || !contactId) return html;
+
+  // Pixel de abertura — injetado antes de </body>
+  const pixelUrl = `${TRACK_BASE}?type=open&cid=${encodeURIComponent(campaignId)}&eid=${encodeURIComponent(contactId)}`;
+  const pixel = `<img src="${pixelUrl}" width="1" height="1" style="display:none" alt="" />`;
+
+  // Reescrever links externos (não unsubscribe, não imagens)
+  const rewritten = html.replace(
+    /href="(https?:\/\/[^"]+)"/g,
+    (match, url) => {
+      // Não rastrear links do próprio sistema
+      if (url.includes(APP_URL) || url.includes('unsubscribe') || url.includes('base44.app')) return match;
+      const trackUrl = `${TRACK_BASE}?type=click&cid=${encodeURIComponent(campaignId)}&eid=${encodeURIComponent(contactId)}&url=${encodeURIComponent(url)}`;
+      return `href="${trackUrl}"`;
+    }
+  );
+
+  // Injeta pixel antes de </body>
+  return rewritten.includes('</body>')
+    ? rewritten.replace('</body>', `${pixel}</body>`)
+    : rewritten + pixel;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -192,6 +217,10 @@ ${buildUnsubscribeFooter(contact.email)}
       subject = tpl.subject(contact);
       htmlBody = buildHtml(contact, tpl, waNumber);
     }
+
+    // Injetar tracking de abertura e clique
+    const campaignId = body.campaign_id || null;
+    htmlBody = injectTracking(htmlBody, campaignId, contact.id || null);
 
     // Send via TurboSMTP API (única via de envio)
     const consumerKey = settingsMap['TURBOSMTP_CONSUMER_KEY'];

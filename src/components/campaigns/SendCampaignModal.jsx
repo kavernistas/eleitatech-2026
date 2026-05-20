@@ -144,6 +144,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
           contact,
           subject: campaign.subject_a || campaign.name,
           html_body: campaign.html_body,
+          campaign_id: campaign.id,
         });
         // Se a função retornou erro no body mesmo com status 200
         if (res?.data?.error) {
