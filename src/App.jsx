@@ -18,6 +18,7 @@ import Forms from '@/pages/Forms';
 import Analytics from '@/pages/Analytics';
 import Settings from '@/pages/Settings';
 import WhatsAppHub from '@/pages/WhatsAppHub';
+import WhatsappCampaigns from '@/pages/WhatsappCampaigns';
 
 const PublicRoutes = () => (
   <Routes>
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/whatsapp" element={<WhatsAppHub />} />
+        <Route path="/whatsapp-campaigns" element={<WhatsappCampaigns />} />
       </Route>
       <Route path="/unsubscribe" element={<Unsubscribe />} />
       <Route path="/cadastrar-contato" element={<CadastrarContato />} />

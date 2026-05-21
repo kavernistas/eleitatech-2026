@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Mail, Zap, MessageSquare, FileText,
-  BarChart3, Settings, Menu, Scale, Bell, ChevronRight, Phone, LogOut
+  BarChart3, Settings, Menu, Scale, Bell, ChevronRight, Phone, LogOut, Send
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/AuthContext';
@@ -16,6 +16,7 @@ const navItems = [
   { path: '/automations', label: 'Automações', icon: Zap },
   { path: '/ai-agent', label: 'Agente IA', icon: MessageSquare, badge: 'NOVO' },
   { path: '/whatsapp', label: 'WhatsApp Hub', icon: Phone, badge: 'LIVE' },
+  { path: '/whatsapp-campaigns', label: 'Camp. WhatsApp', icon: Send, badge: 'NOVO' },
   { path: '/forms', label: 'Formulários', icon: FileText },
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/settings', label: 'Configurações', icon: Settings },

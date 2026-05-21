@@ -111,6 +111,16 @@
       "type": "number",
       "default": 0
     },
+    "last_whatsapp_sent": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u00daltima data de envio de mensagem via WhatsApp"
+    },
+    "whatsapp_sent_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Contador de mensagens WhatsApp enviadas"
+    },
     "interest_area": {
       "type": "string",
       "enum": [
