@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Phone, Database, Check, Save, Eye, EyeOff, Info, Zap, Copy } from 'lucide-react';
+import { Phone, Database, Check, Save, Eye, EyeOff, Zap } from 'lucide-react';
 
 const KEYS = [
   { section: 'evolution', label: 'API Evolution (WhatsApp)', icon: Phone, color: 'green', fields: [

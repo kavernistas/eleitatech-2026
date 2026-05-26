@@ -228,7 +228,7 @@ export default function WhatsAppHub() {
   };
 
   // Auto-check connection status on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => { handleCheckConnection(); }, []);
 
   const inboxContacts = contacts.filter(c =>
@@ -249,7 +249,7 @@ export default function WhatsAppHub() {
       const updated = contacts.find(c => c.id === selectedContact.id);
       if (updated) setSelectedContact(updated);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [contacts]);
 
   const handleAssumirConversa = async () => {
