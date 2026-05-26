@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { base44 } from '@/api/base44Client';
 import {
-  Search, Filter, Plus, Upload, Download, Tag,
-  Mail, Phone, MapPin, Clock, ChevronRight,
-  CheckCircle, AlertCircle, Circle, Star, Users, X, Trash2
+  Search, Filter, Plus, Upload, Download,
+  Mail, ChevronRight,
+  CheckCircle, Users, X, Trash2
 } from 'lucide-react';
 
 function exportToCSV(contacts) {
@@ -25,7 +25,6 @@ function exportToCSV(contacts) {
 }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ContactCard from '@/components/contacts/ContactCard';
 import ContactDetail from '@/components/contacts/ContactDetail';

@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Send, Clock, BarChart2, Copy, Trash2, TestTube, Eye, CalendarClock } from 'lucide-react';
+import { Plus, Send, Trash2, TestTube, Eye, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import CampaignEditor from '@/components/campaigns/CampaignEditor';
 import ABTestPanel from '@/components/campaigns/ABTestPanel';
 import SendCampaignModal from '@/components/campaigns/SendCampaignModal';

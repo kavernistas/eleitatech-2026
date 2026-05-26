@@ -1,5 +1,4 @@
 import { Mail, MapPin } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 export default function ContactCard({ contact, selected, statusColors, onClick }) {
   const initials = (contact.name || contact.email || '?').substring(0, 2).toUpperCase();

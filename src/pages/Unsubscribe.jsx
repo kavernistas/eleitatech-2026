@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { CheckCircle2, XCircle, Loader2, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function Unsubscribe() {
   const [status, setStatus] = useState('loading'); // loading | success | error | notfound

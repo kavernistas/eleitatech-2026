@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Settings2, User, Mail, Bell, Shield, Palette,
-  Save, Check, Building2, Phone, Globe, Key, Sheet
+import { Mail, Bell, Shield,
+  Save, Check, Building2, Key, Sheet
 } from 'lucide-react';
 import GoogleSheetsSync from '@/components/settings/GoogleSheetsSync';
-import SupabaseStatus from '@/components/settings/SupabaseStatus';
 import SchedulingLinkSettings from '@/components/settings/SchedulingLinkSettings';
 import ApiKeysSettings from '@/components/settings/ApiKeysSettings';
 import WebhookDocs from '@/components/settings/WebhookDocs';
