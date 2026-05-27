@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest, createClient } from 'npm:@base44/sdk@0.8.25';
 
 // 1x1 transparent GIF
 const PIXEL = new Uint8Array([
@@ -17,7 +17,8 @@ Deno.serve(async (req) => {
   if (cid && eid && (type === 'open' || type === 'click')) {
     (async () => {
       try {
-        const base44 = createClientFromRequest(req);
+        const appId = Deno.env.get('BASE44_APP_ID');
+        const base44 = createClient({ appId });
 
         if (type === 'open') {
           // Update contact
