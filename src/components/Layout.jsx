@@ -4,7 +4,6 @@ import {
   LayoutDashboard, Users, Mail, Zap, MessageSquare, FileText,
   BarChart3, Settings, Menu, Scale, Bell, ChevronRight, Phone, LogOut, Send
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';

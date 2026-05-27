@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Plus, Code, Eye, Trash2, Copy, CheckCircle, FileText, Layers } from 'lucide-react';
+import { Plus, Code, Eye, Trash2, CheckCircle, FileText, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
 
 const defaultFields = [
   { id: 1, label: 'Nome do Responsável', type: 'text', required: true },

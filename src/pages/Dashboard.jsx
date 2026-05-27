@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
-  Users, Mail, MousePointer, TrendingUp,
-  Scale, Clock, AlertTriangle, CheckCircle2,
-  BarChart3, Send, Wifi, WifiOff, ExternalLink
+  Users, Mail, MousePointer, AlertTriangle,
+  BarChart3, ExternalLink
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import KpiCard from '@/components/dashboard/KpiCard';

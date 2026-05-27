@@ -1,13 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import {
-  MessageSquare, Send, Bot, User, AlertTriangle,
-  Phone, ChevronRight, Search, RefreshCw
+import { Send, Bot, User, AlertTriangle, ChevronRight, Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 
 const systemPrompt = `Você é o assistente virtual inteligente da Marcos Eduardo Especialista em Contabilidade Partidária e Eleitoral, empresa especializada em Prestação de Contas Partidária e Eleitoral. Você atua sob a metodologia e expertise técnica do contador Marcos Eduardo, especialista em contabilidade eleitoral. Sua comunicação é ágil, técnica, altamente profissional e focada em garantir a segurança jurídica e a conformidade dos partidos e candidatos perante a Justiça Eleitoral (TSE/TREs).
 

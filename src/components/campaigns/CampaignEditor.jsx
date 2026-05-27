@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   ArrowLeft, Wand2, Save, Eye, EyeOff, Plus,
-  Type, AlignLeft, MousePointer, Minus, Image, Clock, CalendarClock, X
+  Type, AlignLeft, MousePointer, Minus, Image, Clock, CalendarClock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
