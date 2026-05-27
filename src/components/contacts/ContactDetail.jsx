@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { X, Mail, Phone, MapPin, Tag, MessageSquare, Edit2, Save, Plus, Wand2, Bot, Pencil } from 'lucide-react';
+import { X, Mail, Phone, MapPin, MessageSquare, Edit2, Save, Wand2, Bot, Pencil } from 'lucide-react';
 import WhatsAppButton from './WhatsAppButton';
 import EditContactModal from './EditContactModal';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 

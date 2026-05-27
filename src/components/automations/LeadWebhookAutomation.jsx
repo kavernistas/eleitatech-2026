@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import {
-  Zap, Plus, Trash2, Power, PowerOff, Webhook, ChevronRight,
+  Zap, Plus, Trash2, Webhook, ChevronRight,
   CheckCircle2, Clock, Filter, Mail, ArrowRight, Settings2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
