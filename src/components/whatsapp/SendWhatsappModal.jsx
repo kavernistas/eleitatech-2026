@@ -263,9 +263,12 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                   </p>
                 )}
                 {mayorPartyFilter !== 'all' && mayorPartyFilter !== 'any' && (
-                  <p className="text-[11px] text-amber-700">
-                    Mostrando contatos cujas cidades têm prefeito do <strong>{mayorPartyFilter}</strong>
-                  </p>
+                  <div className="text-[11px] text-amber-700 space-y-1">
+                    <p>Mostrando contatos cujas cidades têm prefeito do <strong>{mayorPartyFilter}</strong></p>
+                    <p className="font-mono bg-amber-100 rounded p-1">
+                      Cidades indexadas: {mayorCitiesByParty[mayorPartyFilter] ? [...mayorCitiesByParty[mayorPartyFilter]].join(', ') : 'nenhuma'}
+                    </p>
+                  </div>
                 )}
               </div>
 
