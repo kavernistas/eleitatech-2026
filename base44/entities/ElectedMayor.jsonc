@@ -1,0 +1,49 @@
+{
+  "name": "ElectedMayor",
+  "type": "object",
+  "properties": {
+    "city": {
+      "type": "string",
+      "description": "Nome da cidade"
+    },
+    "mayor_name": {
+      "type": "string",
+      "description": "Nome do prefeito eleito"
+    },
+    "party": {
+      "type": "string",
+      "description": "Sigla do partido do prefeito"
+    },
+    "state": {
+      "type": "string",
+      "default": "SP",
+      "description": "Estado"
+    }
+  },
+  "required": [
+    "city",
+    "party"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
