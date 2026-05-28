@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Send, Search, X, CheckCircle2, AlertTriangle, Users } from 'lucide-react';
@@ -107,6 +107,11 @@ export default function SendWhatsappModal({ campaign, onClose }) {
     }
     return true;
   }), [contacts, statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, mayorPartyByCity, search]);
+
+  // Reset seleção manual quando os filtros mudam
+  useEffect(() => {
+    setSelectedIds(null);
+  }, [statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, search]);
 
   const recipients = selectedIds ? filtered.filter(c => selectedIds.has(c.id)) : filtered;
 
