@@ -64,11 +64,13 @@ export default function SendWhatsappModal({ campaign, onClose }) {
     },
   });
 
-  // Mapa: cidade (uppercase) -> partido do prefeito
+  // Mapa: cidade normalizada -> partido do prefeito
+  const normalize = (s) => (s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  
   const mayorPartyByCity = useMemo(() => {
     const map = {};
     mayors.forEach(m => {
-      if (m.city) map[m.city.toUpperCase()] = m.party;
+      if (m.city) map[normalize(m.city)] = m.party;
     });
     return map;
   }, [mayors]);
@@ -98,10 +100,10 @@ export default function SendWhatsappModal({ campaign, onClose }) {
         if (cp !== partyFilter) return false;
       }
       if (mayorPartyFilter === 'any') {
-        const cityKey = (c.city || '').toUpperCase();
+        const cityKey = normalize(c.city);
         if (!mayorPartyByCity[cityKey]) return false;
       } else if (mayorPartyFilter !== 'all') {
-        const cityKey = (c.city || '').toUpperCase();
+        const cityKey = normalize(c.city);
         const mayorParty = mayorPartyByCity[cityKey];
         if (mayorParty !== mayorPartyFilter) return false;
       }
@@ -324,9 +326,9 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                         {c.party_acronym ? ` · ${c.party_acronym}` : ''}
                         {c.city ? ` · ${c.city}` : ''}
                         {c.state ? `/${c.state}` : ''}
-                        {mayorPartyByCity[(c.city || '').toUpperCase()] ? (
+                        {mayorPartyByCity[normalize(c.city)] ? (
                           <span className="ml-1 text-amber-700 font-medium">
-                            🏛 {mayorPartyByCity[(c.city || '').toUpperCase()]}
+                            🏛 {mayorPartyByCity[normalize(c.city)]}
                           </span>
                         ) : null}
                       </p>
