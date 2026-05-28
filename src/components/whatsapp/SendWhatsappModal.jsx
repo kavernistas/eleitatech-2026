@@ -66,15 +66,30 @@ export default function SendWhatsappModal({ campaign, onClose }) {
     },
   });
 
-  // Set de partidos que têm pelo menos um prefeito cadastrado
+  // Mapa: cidade normalizada -> partido do prefeito
+  const mayorPartyByCity = useMemo(() => {
+    const map = {};
+    mayors.forEach(m => {
+      if (m.city) map[normalize(m.city)] = m.party || true;
+    });
+    return map;
+  }, [mayors]);
+
+  // Set de cidades (normalizadas) por partido do prefeito
+  const mayorCitiesByParty = useMemo(() => {
+    const map = {};
+    mayors.forEach(m => {
+      if (m.city && m.party) {
+        if (!map[m.party]) map[m.party] = new Set();
+        map[m.party].add(normalize(m.city));
+      }
+    });
+    return map;
+  }, [mayors]);
+
   const mayorParties = useMemo(() => {
     const partiesSet = new Set(mayors.map(m => m.party).filter(Boolean));
     return [...partiesSet].sort();
-  }, [mayors]);
-
-  // Set de todos os partidos com prefeito (para filtro "any")
-  const mayorPartiesSet = useMemo(() => {
-    return new Set(mayors.map(m => m.party).filter(Boolean));
   }, [mayors]);
 
   const ufs = useMemo(() => [...new Set(contacts.map(c => c.state).filter(Boolean))].sort(), [contacts]);
@@ -97,11 +112,12 @@ export default function SendWhatsappModal({ campaign, onClose }) {
         if (cp !== partyFilter) return false;
       }
       if (mayorPartyFilter === 'any') {
-        const cp = (c.party_acronym || c.party_name || '').toUpperCase().trim();
-        if (!mayorPartiesSet.has(cp)) return false;
+        const cityKey = normalize(c.city);
+        if (!mayorPartyByCity[cityKey]) return false;
       } else if (mayorPartyFilter !== 'all') {
-        const cp = (c.party_acronym || c.party_name || '').toUpperCase().trim();
-        if (cp !== mayorPartyFilter.toUpperCase().trim()) return false;
+        const cityKey = normalize(c.city);
+        const citiesForParty = mayorCitiesByParty[mayorPartyFilter];
+        if (!citiesForParty || !citiesForParty.has(cityKey)) return false;
       }
       if (search) {
         const q = search.toLowerCase();
@@ -109,7 +125,7 @@ export default function SendWhatsappModal({ campaign, onClose }) {
       }
       return true;
     });
-  }, [contacts, statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, mayorPartiesSet, mayorsLoading, search]);
+  }, [contacts, statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, mayorPartyByCity, mayorCitiesByParty, mayorsLoading, search]);
 
   // Reset seleção manual quando os filtros mudam
   useEffect(() => {
@@ -322,8 +338,10 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                         {c.party_acronym ? ` · ${c.party_acronym}` : ''}
                         {c.city ? ` · ${c.city}` : ''}
                         {c.state ? `/${c.state}` : ''}
-                        {mayorPartiesSet.has((c.party_acronym || c.party_name || '').toUpperCase().trim()) ? (
-                          <span className="ml-1 text-amber-700 font-medium">🏛</span>
+                        {mayorPartyByCity[normalize(c.city)] ? (
+                          <span className="ml-1 text-amber-700 font-medium">
+                            🏛 {mayorPartyByCity[normalize(c.city)] !== true ? mayorPartyByCity[normalize(c.city)] : ''}
+                          </span>
                         ) : null}
                       </p>
                     </div>
