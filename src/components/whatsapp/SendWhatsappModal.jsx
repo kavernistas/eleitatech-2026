@@ -93,7 +93,10 @@ export default function SendWhatsappModal({ campaign, onClose }) {
       const cp = c.party_acronym || c.party_name || '';
       if (cp !== partyFilter) return false;
     }
-    if (mayorPartyFilter !== 'all') {
+    if (mayorPartyFilter === 'any') {
+      const cityKey = (c.city || '').toUpperCase();
+      if (!mayorPartyByCity[cityKey]) return false;
+    } else if (mayorPartyFilter !== 'all') {
       const cityKey = (c.city || '').toUpperCase();
       const mayorParty = mayorPartyByCity[cityKey];
       if (mayorParty !== mayorPartyFilter) return false;
@@ -220,13 +223,19 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                     <SelectValue placeholder="Filtrar pelo partido do prefeito" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all" className="text-xs">Todos os partidos</SelectItem>
+                    <SelectItem value="all" className="text-xs">— Sem filtro de prefeito —</SelectItem>
+                    <SelectItem value="any" className="text-xs">✅ Com prefeito cadastrado (qualquer partido)</SelectItem>
                     {mayorParties.map(p => (
                       <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {mayorPartyFilter !== 'all' && (
+                {mayorPartyFilter === 'any' && (
+                  <p className="text-[11px] text-amber-700">
+                    Mostrando contatos cujas cidades têm <strong>qualquer prefeito cadastrado</strong>
+                  </p>
+                )}
+                {mayorPartyFilter !== 'all' && mayorPartyFilter !== 'any' && (
                   <p className="text-[11px] text-amber-700">
                     Mostrando contatos cujas cidades têm prefeito do <strong>{mayorPartyFilter}</strong>
                   </p>
