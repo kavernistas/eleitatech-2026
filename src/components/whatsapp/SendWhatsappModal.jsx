@@ -243,9 +243,6 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                 {mayorsLoading && (
                   <p className="text-[11px] text-amber-600">⏳ Carregando base de prefeitos ({mayors.length} carregados)...</p>
                 )}
-                {!mayorsLoading && mayors.length > 0 && mayorPartyFilter === 'all' && (
-                  <p className="text-[11px] text-amber-700">{mayors.length} municípios carregados</p>
-                )}
                 {mayorPartyFilter === 'any' && (
                   <p className="text-[11px] text-amber-700">
                     Mostrando contatos cujas cidades têm <strong>qualquer prefeito cadastrado</strong>
@@ -304,6 +301,12 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                 <span className="text-xs font-medium">
                   <Users size={12} className="inline mr-1" />
                   {filtered.length} com WhatsApp · {recipients.length} selecionados
+                  {!mayorsLoading && mayors.length > 0 && (
+                    <span className="ml-2 text-amber-700 font-normal">· 🏛 {mayors.length} municípios</span>
+                  )}
+                  {mayorsLoading && (
+                    <span className="ml-2 text-amber-600 font-normal">· ⏳ carregando municípios...</span>
+                  )}
                 </span>
                 <div className="flex gap-2">
                   <button onClick={() => setSelectedIds(null)} className="text-xs text-navy hover:underline">Todos</button>
