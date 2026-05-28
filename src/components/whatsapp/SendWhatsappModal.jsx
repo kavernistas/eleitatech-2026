@@ -50,7 +50,18 @@ export default function SendWhatsappModal({ campaign, onClose }) {
 
   const { data: mayors = [] } = useQuery({
     queryKey: ['elected-mayors'],
-    queryFn: () => base44.entities.ElectedMayor.list('city', 500),
+    queryFn: async () => {
+      const pageSize = 500;
+      let all = [];
+      let page = 0;
+      while (true) {
+        const batch = await base44.entities.ElectedMayor.list('city', pageSize, page * pageSize);
+        all = all.concat(batch);
+        if (batch.length < pageSize) break;
+        page++;
+      }
+      return all;
+    },
   });
 
   // Mapa: cidade (uppercase) -> partido do prefeito
