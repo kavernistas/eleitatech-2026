@@ -48,7 +48,7 @@ export default function SendWhatsappModal({ campaign, onClose }) {
     },
   });
 
-  const { data: mayors = [] } = useQuery({
+  const { data: mayors = [], isLoading: mayorsLoading } = useQuery({
     queryKey: ['elected-mayors'],
     queryFn: async () => {
       const pageSize = 500;
@@ -84,29 +84,34 @@ export default function SendWhatsappModal({ campaign, onClose }) {
   }, [contacts, ufFilter]);
   const parties = useMemo(() => [...new Set(contacts.map(c => c.party_acronym || c.party_name).filter(Boolean))].sort(), [contacts]);
 
-  const filtered = useMemo(() => contacts.filter(c => {
-    if (!c.phone) return false;
-    if (statusFilter && statusFilter.size > 0 && !statusFilter.has(c.status || 'novo')) return false;
-    if (ufFilter !== 'all' && c.state !== ufFilter) return false;
-    if (cityFilter !== 'all' && c.city !== cityFilter) return false;
-    if (partyFilter !== 'all') {
-      const cp = c.party_acronym || c.party_name || '';
-      if (cp !== partyFilter) return false;
-    }
-    if (mayorPartyFilter === 'any') {
-      const cityKey = (c.city || '').toUpperCase();
-      if (!mayorPartyByCity[cityKey]) return false;
-    } else if (mayorPartyFilter !== 'all') {
-      const cityKey = (c.city || '').toUpperCase();
-      const mayorParty = mayorPartyByCity[cityKey];
-      if (mayorParty !== mayorPartyFilter) return false;
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      if (![c.name, c.phone, c.party_name, c.party_acronym, c.city].join(' ').toLowerCase().includes(q)) return false;
-    }
-    return true;
-  }), [contacts, statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, mayorPartyByCity, search]);
+  const filtered = useMemo(() => {
+    // Se o filtro de prefeito está ativo mas os mayors ainda não carregaram, retorna vazio
+    if (mayorPartyFilter !== 'all' && mayorsLoading) return [];
+    
+    return contacts.filter(c => {
+      if (!c.phone) return false;
+      if (statusFilter && statusFilter.size > 0 && !statusFilter.has(c.status || 'novo')) return false;
+      if (ufFilter !== 'all' && c.state !== ufFilter) return false;
+      if (cityFilter !== 'all' && c.city !== cityFilter) return false;
+      if (partyFilter !== 'all') {
+        const cp = c.party_acronym || c.party_name || '';
+        if (cp !== partyFilter) return false;
+      }
+      if (mayorPartyFilter === 'any') {
+        const cityKey = (c.city || '').toUpperCase();
+        if (!mayorPartyByCity[cityKey]) return false;
+      } else if (mayorPartyFilter !== 'all') {
+        const cityKey = (c.city || '').toUpperCase();
+        const mayorParty = mayorPartyByCity[cityKey];
+        if (mayorParty !== mayorPartyFilter) return false;
+      }
+      if (search) {
+        const q = search.toLowerCase();
+        if (![c.name, c.phone, c.party_name, c.party_acronym, c.city].join(' ').toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [contacts, statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, mayorPartyByCity, mayorsLoading, search]);
 
   // Reset seleção manual quando os filtros mudam
   useEffect(() => {
@@ -223,9 +228,9 @@ export default function SendWhatsappModal({ campaign, onClose }) {
               {/* Filtro por partido do prefeito eleito 2024 */}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
                 <p className="text-xs font-semibold text-amber-800">🏛 Prefeito Eleito 2024 (cidade do contato)</p>
-                <Select value={mayorPartyFilter} onValueChange={setMayorPartyFilter}>
+                <Select value={mayorPartyFilter} onValueChange={setMayorPartyFilter} disabled={mayorsLoading}>
                   <SelectTrigger className="h-8 text-xs border-amber-300">
-                    <SelectValue placeholder="Filtrar pelo partido do prefeito" />
+                    <SelectValue placeholder={mayorsLoading ? "Carregando prefeitos..." : "Filtrar pelo partido do prefeito"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all" className="text-xs">— Sem filtro de prefeito —</SelectItem>
@@ -235,6 +240,12 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                     ))}
                   </SelectContent>
                 </Select>
+                {mayorsLoading && (
+                  <p className="text-[11px] text-amber-600">⏳ Carregando base de prefeitos ({mayors.length} carregados)...</p>
+                )}
+                {!mayorsLoading && mayors.length > 0 && mayorPartyFilter === 'all' && (
+                  <p className="text-[11px] text-amber-700">{mayors.length} municípios carregados</p>
+                )}
                 {mayorPartyFilter === 'any' && (
                   <p className="text-[11px] text-amber-700">
                     Mostrando contatos cujas cidades têm <strong>qualquer prefeito cadastrado</strong>
