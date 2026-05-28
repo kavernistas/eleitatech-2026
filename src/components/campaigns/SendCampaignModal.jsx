@@ -179,9 +179,7 @@ export default function SendCampaignModal({ campaign, onClose }) {
 
     await updateCampaignMutation.mutateAsync({
       status: 'enviado',
-      total_sent: sent,
-      total_opened: 0,
-      total_clicked: 0,
+      total_sent: (campaign.total_sent || 0) + sent,
       sent_at: new Date().toISOString(),
     });
     setStep('done');

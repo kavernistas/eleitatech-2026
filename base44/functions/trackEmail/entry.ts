@@ -21,27 +21,30 @@ Deno.serve(async (req) => {
         const base44 = createClient({ appId });
 
         if (type === 'open') {
-          // Update contact
-          const contact = await base44.asServiceRole.entities.Contact.list()
-            .then(all => all.find(c => c.id === eid));
+          const [contacts, campaigns] = await Promise.all([
+            base44.asServiceRole.entities.Contact.filter({ id: eid }),
+            base44.asServiceRole.entities.Campaign.filter({ id: cid }),
+          ]);
+          const contact = contacts[0];
+          const campaign = campaigns[0];
           if (contact) {
             await base44.asServiceRole.entities.Contact.update(eid, {
               last_email_opened: new Date().toISOString(),
               emails_opened_count: (contact.emails_opened_count || 0) + 1,
             });
           }
-          // Update campaign total_opened
-          const campaign = await base44.asServiceRole.entities.Campaign.list()
-            .then(all => all.find(c => c.id === cid));
           if (campaign) {
             await base44.asServiceRole.entities.Campaign.update(cid, {
               total_opened: (campaign.total_opened || 0) + 1,
             });
           }
         } else if (type === 'click') {
-          // Update contact
-          const contact = await base44.asServiceRole.entities.Contact.list()
-            .then(all => all.find(c => c.id === eid));
+          const [contacts, campaigns] = await Promise.all([
+            base44.asServiceRole.entities.Contact.filter({ id: eid }),
+            base44.asServiceRole.entities.Campaign.filter({ id: cid }),
+          ]);
+          const contact = contacts[0];
+          const campaign = campaigns[0];
           if (contact) {
             await base44.asServiceRole.entities.Contact.update(eid, {
               last_clicked: new Date().toISOString(),
@@ -49,9 +52,6 @@ Deno.serve(async (req) => {
               status: ['novo','contato_feito'].includes(contact.status) ? 'interessado' : contact.status,
             });
           }
-          // Update campaign total_clicked + click_map
-          const campaign = await base44.asServiceRole.entities.Campaign.list()
-            .then(all => all.find(c => c.id === cid));
           if (campaign) {
             const clickMap = campaign.click_map || {};
             const key = dest ? new URL(dest).hostname : 'unknown';
