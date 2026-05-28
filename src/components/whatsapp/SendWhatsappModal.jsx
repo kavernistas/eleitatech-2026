@@ -120,8 +120,11 @@ export default function SendWhatsappModal({ campaign, onClose }) {
         const filterParty = normalize(mayorPartyFilter);
         if (contactParty !== filterParty) return false;
         const cityKey = normalize(c.city);
+        // Busca normalizada nas cidades do partido
         const citiesForParty = mayorCitiesByParty[mayorPartyFilter];
-        if (!citiesForParty || !citiesForParty.has(cityKey)) return false;
+        if (!citiesForParty) return false;
+        // Compara normalizado com normalizado (já gravados normalizados no useMemo)
+        if (!citiesForParty.has(cityKey)) return false;
       }
       if (search) {
         const q = search.toLowerCase();
@@ -267,9 +270,15 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                   </p>
                 )}
                 {mayorPartyFilter !== 'all' && mayorPartyFilter !== 'any' && (
-                  <p className="text-[11px] text-amber-700">
-                    Mostrando contatos do <strong>{mayorPartyFilter}</strong> com prefeitura cadastrada
-                  </p>
+                  <div className="text-[11px] text-amber-700 space-y-1">
+                    <p>Mostrando contatos do <strong>{mayorPartyFilter}</strong> com prefeitura cadastrada</p>
+                    <p className="font-mono bg-amber-100 rounded p-1 break-all">
+                      🏛 Cidades: {mayorCitiesByParty[mayorPartyFilter] ? [...mayorCitiesByParty[mayorPartyFilter]].join(' | ') : 'nenhuma'}
+                    </p>
+                    <p className="font-mono bg-amber-100 rounded p-1 break-all">
+                      👥 Cidades dos contatos filtrados: {[...new Set(contacts.filter(c => normalize(c.party_acronym || c.party_name || '') === normalize(mayorPartyFilter)).map(c => normalize(c.city)))].join(' | ')}
+                    </p>
+                  </div>
                 )}
               </div>
 
