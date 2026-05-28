@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 
+const normalize = (s) => (s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
 const STATUS_OPTIONS = [
   { value: 'novo', label: 'Novo', color: 'bg-slate-100 text-slate-700 border-slate-300' },
   { value: 'contato_feito', label: 'Contato Feito', color: 'bg-blue-50 text-blue-700 border-blue-300' },
@@ -65,8 +67,6 @@ export default function SendWhatsappModal({ campaign, onClose }) {
   });
 
   // Mapa: cidade normalizada -> partido do prefeito
-  const normalize = (s) => (s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-  
   const mayorPartyByCity = useMemo(() => {
     const map = {};
     mayors.forEach(m => {
