@@ -115,7 +115,10 @@ export default function SendWhatsappModal({ campaign, onClose }) {
         const cityKey = normalize(c.city);
         if (!mayorPartyByCity[cityKey]) return false;
       } else if (mayorPartyFilter !== 'all') {
-        // Contato cuja cidade tem prefeito do partido selecionado (independente do partido do contato)
+        // Contato deve ser do mesmo partido E estar em cidade com prefeito desse partido
+        const contactParty = normalize(c.party_acronym || c.party_name || '');
+        const filterParty = normalize(mayorPartyFilter);
+        if (contactParty !== filterParty) return false;
         const cityKey = normalize(c.city);
         const citiesForParty = mayorCitiesByParty[mayorPartyFilter];
         if (!citiesForParty || !citiesForParty.has(cityKey)) return false;
@@ -267,7 +270,10 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                   <div className="text-[11px] text-amber-700 space-y-1">
                     <p>Mostrando contatos do <strong>{mayorPartyFilter}</strong> com prefeitura cadastrada</p>
                     <p className="font-mono bg-amber-100 rounded p-1 break-all">
-                      🏛 Cidades: {mayorCitiesByParty[mayorPartyFilter] ? [...mayorCitiesByParty[mayorPartyFilter]].join(' | ') : 'nenhuma'}
+                      🏛 Cidades prefeitos: {mayorCitiesByParty[mayorPartyFilter] ? [...mayorCitiesByParty[mayorPartyFilter]].join(' | ') : 'nenhuma'}
+                    </p>
+                    <p className="font-mono bg-amber-100 rounded p-1 break-all">
+                      👥 Contatos com party={mayorPartyFilter}: {[...new Set(contacts.filter(c => normalize(c.party_acronym || c.party_name || '') === normalize(mayorPartyFilter)).map(c => `${normalize(c.city)}[${c.party_acronym||c.party_name||'?'}]`))].slice(0,10).join(' | ')}
                     </p>
 
                   </div>
