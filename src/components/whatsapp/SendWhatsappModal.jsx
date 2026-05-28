@@ -115,6 +115,10 @@ export default function SendWhatsappModal({ campaign, onClose }) {
         const cityKey = normalize(c.city);
         if (!mayorPartyByCity[cityKey]) return false;
       } else if (mayorPartyFilter !== 'all') {
+        // Contato deve ser do mesmo partido E estar em cidade com prefeito desse partido
+        const contactParty = normalize(c.party_acronym || c.party_name || '');
+        const filterParty = normalize(mayorPartyFilter);
+        if (contactParty !== filterParty) return false;
         const cityKey = normalize(c.city);
         const citiesForParty = mayorCitiesByParty[mayorPartyFilter];
         if (!citiesForParty || !citiesForParty.has(cityKey)) return false;
@@ -263,12 +267,9 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                   </p>
                 )}
                 {mayorPartyFilter !== 'all' && mayorPartyFilter !== 'any' && (
-                  <div className="text-[11px] text-amber-700 space-y-1">
-                    <p>Mostrando contatos cujas cidades têm prefeito do <strong>{mayorPartyFilter}</strong></p>
-                    <p className="font-mono bg-amber-100 rounded p-1">
-                      Cidades indexadas: {mayorCitiesByParty[mayorPartyFilter] ? [...mayorCitiesByParty[mayorPartyFilter]].join(', ') : 'nenhuma'}
-                    </p>
-                  </div>
+                  <p className="text-[11px] text-amber-700">
+                    Mostrando contatos do <strong>{mayorPartyFilter}</strong> com prefeitura cadastrada
+                  </p>
                 )}
               </div>
 
