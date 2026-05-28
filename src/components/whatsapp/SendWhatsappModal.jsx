@@ -270,10 +270,7 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                   <div className="text-[11px] text-amber-700 space-y-1">
                     <p>Mostrando contatos do <strong>{mayorPartyFilter}</strong> com prefeitura cadastrada</p>
                     <p className="font-mono bg-amber-100 rounded p-1 break-all">
-                      🏛 Cidades prefeitos: {mayorCitiesByParty[mayorPartyFilter] ? [...mayorCitiesByParty[mayorPartyFilter]].join(' | ') : 'nenhuma'}
-                    </p>
-                    <p className="font-mono bg-amber-100 rounded p-1 break-all">
-                      👥 Contatos com party={mayorPartyFilter}: {[...new Set(contacts.filter(c => normalize(c.party_acronym || c.party_name || '') === normalize(mayorPartyFilter)).map(c => `${normalize(c.city)}[${c.party_acronym||c.party_name||'?'}]`))].slice(0,10).join(' | ')}
+                      🏛 Cidades: {mayorCitiesByParty[mayorPartyFilter] ? [...mayorCitiesByParty[mayorPartyFilter]].join(' | ') : 'nenhuma'}
                     </p>
 
                   </div>
