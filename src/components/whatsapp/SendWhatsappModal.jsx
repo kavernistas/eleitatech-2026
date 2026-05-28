@@ -301,9 +301,6 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                 <span className="text-xs font-medium">
                   <Users size={12} className="inline mr-1" />
                   {filtered.length} com WhatsApp · {recipients.length} selecionados
-                  {!mayorsLoading && mayors.length > 0 && (
-                    <span className="ml-2 text-amber-700 font-normal">· 🏛 {mayors.length} municípios</span>
-                  )}
                   {mayorsLoading && (
                     <span className="ml-2 text-amber-600 font-normal">· ⏳ carregando municípios...</span>
                   )}
