@@ -1,7 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const APP_URL = Deno.env.get('APP_PUBLIC_URL') || 'https://eleita-tech-2026.base44.app';
-const TRACK_BASE = `${APP_URL}/functions/trackEmail`;
+const APP_ID = Deno.env.get('BASE44_APP_ID');
+const TRACK_BASE = `https://backend.base44.app/api/apps/${APP_ID}/functions/trackEmail`;
 
 function unsubscribeUrl(email) {
   const encoded = btoa(unescape(encodeURIComponent(email)));
