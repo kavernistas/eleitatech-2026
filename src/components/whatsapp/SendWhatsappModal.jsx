@@ -267,13 +267,9 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                   </p>
                 )}
                 {mayorPartyFilter !== 'all' && mayorPartyFilter !== 'any' && (
-                  <div className="text-[11px] text-amber-700 space-y-1">
-                    <p>Mostrando contatos do <strong>{mayorPartyFilter}</strong> com prefeitura cadastrada</p>
-                    <p className="font-mono bg-amber-100 rounded p-1 break-all">
-                      🏛 Cidades: {mayorCitiesByParty[mayorPartyFilter] ? [...mayorCitiesByParty[mayorPartyFilter]].join(' | ') : 'nenhuma'}
-                    </p>
-
-                  </div>
+                  <p className="text-[11px] text-amber-700">
+                    Mostrando contatos do <strong>{mayorPartyFilter}</strong> em cidades com prefeitura cadastrada
+                  </p>
                 )}
               </div>
 
