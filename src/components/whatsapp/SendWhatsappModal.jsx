@@ -66,18 +66,15 @@ export default function SendWhatsappModal({ campaign, onClose }) {
     },
   });
 
-  // Mapa: cidade normalizada -> partido do prefeito
-  const mayorPartyByCity = useMemo(() => {
-    const map = {};
-    mayors.forEach(m => {
-      if (m.city) map[normalize(m.city)] = m.party;
-    });
-    return map;
-  }, [mayors]);
-
+  // Set de partidos que têm pelo menos um prefeito cadastrado
   const mayorParties = useMemo(() => {
     const partiesSet = new Set(mayors.map(m => m.party).filter(Boolean));
     return [...partiesSet].sort();
+  }, [mayors]);
+
+  // Set de todos os partidos com prefeito (para filtro "any")
+  const mayorPartiesSet = useMemo(() => {
+    return new Set(mayors.map(m => m.party).filter(Boolean));
   }, [mayors]);
 
   const ufs = useMemo(() => [...new Set(contacts.map(c => c.state).filter(Boolean))].sort(), [contacts]);
@@ -100,12 +97,11 @@ export default function SendWhatsappModal({ campaign, onClose }) {
         if (cp !== partyFilter) return false;
       }
       if (mayorPartyFilter === 'any') {
-        const cityKey = normalize(c.city);
-        if (!mayorPartyByCity[cityKey]) return false;
+        const cp = (c.party_acronym || c.party_name || '').toUpperCase().trim();
+        if (!mayorPartiesSet.has(cp)) return false;
       } else if (mayorPartyFilter !== 'all') {
-        const cityKey = normalize(c.city);
-        const mayorParty = mayorPartyByCity[cityKey];
-        if (mayorParty !== mayorPartyFilter) return false;
+        const cp = (c.party_acronym || c.party_name || '').toUpperCase().trim();
+        if (cp !== mayorPartyFilter.toUpperCase().trim()) return false;
       }
       if (search) {
         const q = search.toLowerCase();
@@ -113,7 +109,7 @@ export default function SendWhatsappModal({ campaign, onClose }) {
       }
       return true;
     });
-  }, [contacts, statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, mayorPartyByCity, mayorsLoading, search]);
+  }, [contacts, statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, mayorPartiesSet, mayorsLoading, search]);
 
   // Reset seleção manual quando os filtros mudam
   useEffect(() => {
@@ -326,10 +322,8 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                         {c.party_acronym ? ` · ${c.party_acronym}` : ''}
                         {c.city ? ` · ${c.city}` : ''}
                         {c.state ? `/${c.state}` : ''}
-                        {mayorPartyByCity[normalize(c.city)] ? (
-                          <span className="ml-1 text-amber-700 font-medium">
-                            🏛 {mayorPartyByCity[normalize(c.city)]}
-                          </span>
+                        {mayorPartiesSet.has((c.party_acronym || c.party_name || '').toUpperCase().trim()) ? (
+                          <span className="ml-1 text-amber-700 font-medium">🏛</span>
                         ) : null}
                       </p>
                     </div>
