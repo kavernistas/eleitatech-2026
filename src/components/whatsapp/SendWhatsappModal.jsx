@@ -23,6 +23,7 @@ export default function SendWhatsappModal({ campaign, onClose }) {
   const [ufFilter, setUfFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
   const [partyFilter, setPartyFilter] = useState('all');
+  const [mayorPartyFilter, setMayorPartyFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState(null);
   const [delaySeconds, setDelaySeconds] = useState(5);
@@ -47,6 +48,25 @@ export default function SendWhatsappModal({ campaign, onClose }) {
     },
   });
 
+  const { data: mayors = [] } = useQuery({
+    queryKey: ['elected-mayors'],
+    queryFn: () => base44.entities.ElectedMayor.list('city', 500),
+  });
+
+  // Mapa: cidade (uppercase) -> partido do prefeito
+  const mayorPartyByCity = useMemo(() => {
+    const map = {};
+    mayors.forEach(m => {
+      if (m.city) map[m.city.toUpperCase()] = m.party;
+    });
+    return map;
+  }, [mayors]);
+
+  const mayorParties = useMemo(() => {
+    const partiesSet = new Set(mayors.map(m => m.party).filter(Boolean));
+    return [...partiesSet].sort();
+  }, [mayors]);
+
   const ufs = useMemo(() => [...new Set(contacts.map(c => c.state).filter(Boolean))].sort(), [contacts]);
   const cities = useMemo(() => {
     return [...new Set(contacts.filter(c => ufFilter === 'all' || c.state === ufFilter).map(c => c.city).filter(Boolean))].sort();
@@ -62,12 +82,17 @@ export default function SendWhatsappModal({ campaign, onClose }) {
       const cp = c.party_acronym || c.party_name || '';
       if (cp !== partyFilter) return false;
     }
+    if (mayorPartyFilter !== 'all') {
+      const cityKey = (c.city || '').toUpperCase();
+      const mayorParty = mayorPartyByCity[cityKey];
+      if (mayorParty !== mayorPartyFilter) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
       if (![c.name, c.phone, c.party_name, c.party_acronym, c.city].join(' ').toLowerCase().includes(q)) return false;
     }
     return true;
-  }), [contacts, statusFilter, ufFilter, cityFilter, partyFilter, search]);
+  }), [contacts, statusFilter, ufFilter, cityFilter, partyFilter, mayorPartyFilter, mayorPartyByCity, search]);
 
   const recipients = selectedIds ? filtered.filter(c => selectedIds.has(c.id)) : filtered;
 
@@ -142,7 +167,7 @@ export default function SendWhatsappModal({ campaign, onClose }) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-wider">Segmentação</p>
-                <button onClick={() => { setStatusFilter(null); setUfFilter('all'); setCityFilter('all'); setPartyFilter('all'); setSearch(''); setSelectedIds(null); }}
+                <button onClick={() => { setStatusFilter(null); setUfFilter('all'); setCityFilter('all'); setPartyFilter('all'); setMayorPartyFilter('all'); setSearch(''); setSelectedIds(null); }}
                   className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1">
                   <X size={11} /> Limpar
                 </button>
@@ -174,6 +199,27 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Filtro por partido do prefeito eleito 2024 */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
+                <p className="text-xs font-semibold text-amber-800">🏛 Prefeito Eleito 2024 (cidade do contato)</p>
+                <Select value={mayorPartyFilter} onValueChange={setMayorPartyFilter}>
+                  <SelectTrigger className="h-8 text-xs border-amber-300">
+                    <SelectValue placeholder="Filtrar pelo partido do prefeito" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">Todos os partidos</SelectItem>
+                    {mayorParties.map(p => (
+                      <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {mayorPartyFilter !== 'all' && (
+                  <p className="text-[11px] text-amber-700">
+                    Mostrando contatos cujas cidades têm prefeito do <strong>{mayorPartyFilter}</strong>
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -237,7 +283,17 @@ export default function SendWhatsappModal({ campaign, onClose }) {
                     <Checkbox checked={selectedIds ? selectedIds.has(c.id) : true} onCheckedChange={() => toggleSelect(c.id)} className="h-3.5 w-3.5" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{c.name || c.phone}</p>
-                      <p className="text-xs text-muted-foreground">{c.phone} {c.party_acronym ? `· ${c.party_acronym}` : ''} {c.state ? `· ${c.state}` : ''}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {c.phone}
+                        {c.party_acronym ? ` · ${c.party_acronym}` : ''}
+                        {c.city ? ` · ${c.city}` : ''}
+                        {c.state ? `/${c.state}` : ''}
+                        {mayorPartyByCity[(c.city || '').toUpperCase()] ? (
+                          <span className="ml-1 text-amber-700 font-medium">
+                            🏛 {mayorPartyByCity[(c.city || '').toUpperCase()]}
+                          </span>
+                        ) : null}
+                      </p>
                     </div>
                   </div>
                 ))}
