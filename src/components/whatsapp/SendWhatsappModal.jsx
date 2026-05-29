@@ -28,7 +28,7 @@ export default function SendWhatsappModal({ campaign, onClose }) {
   const [mayorPartyFilter, setMayorPartyFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState(null);
-  const [delaySeconds, setDelaySeconds] = useState(5);
+  const [delaySeconds, setDelaySeconds] = useState(1800);
   const [step, setStep] = useState('config');
   const [sentCount, setSentCount] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
@@ -358,16 +358,20 @@ export default function SendWhatsappModal({ campaign, onClose }) {
             <div className="bg-muted/60 border border-border rounded-lg p-3 space-y-1.5">
               <p className="text-xs font-semibold">⏱ Intervalo entre envios</p>
               <div className="flex gap-2 flex-wrap">
-                {[3, 5, 10, 15, 30].map(s => (
-                  <button key={s} onClick={() => setDelaySeconds(s)}
-                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${delaySeconds === s ? 'bg-navy text-white border-navy' : 'border-border text-muted-foreground hover:border-navy hover:text-navy'}`}>
-                    {s}s
+                {[
+                  { value: 1800, label: '30min' },
+                  { value: 3600, label: '60min' },
+                  { value: 5400, label: '90min' },
+                ].map(opt => (
+                  <button key={opt.value} onClick={() => setDelaySeconds(opt.value)}
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${delaySeconds === opt.value ? 'bg-navy text-white border-navy' : 'border-border text-muted-foreground hover:border-navy hover:text-navy'}`}>
+                    {opt.label}
                   </button>
                 ))}
               </div>
               {recipients.length > 0 && (
                 <p className="text-[11px] text-muted-foreground">
-                  Estimativa: ~{Math.ceil((recipients.length * delaySeconds) / 60)} min para {recipients.length} mensagens
+                  Estimativa: ~{Math.ceil((recipients.length * delaySeconds) / 3600)} h para {recipients.length} mensagens
                 </p>
               )}
             </div>
