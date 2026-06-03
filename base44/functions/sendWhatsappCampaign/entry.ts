@@ -69,8 +69,9 @@ Deno.serve(async (req) => {
       status: 'enviando',
     });
 
-    const delayMs = (campaign.delay_seconds ?? 1800) * 1000;
-    const BATCH_SIZE = 20;
+    const BATCH_SIZE = 20;          // mensagens por lote
+    const MSG_INTERVAL_MS = 15000;  // 15s entre cada mensagem
+    const PAUSE_MS = 20 * 60 * 1000; // 20min de pausa entre lotes
     let sent = 0;
     let errors = 0;
 
@@ -84,7 +85,6 @@ Deno.serve(async (req) => {
         await sendWhatsAppMessage(EVO_URL, EVO_KEY, INSTANCE, contact.phone, message);
         sent++;
 
-        // Update contact stats
         await base44.asServiceRole.entities.Contact.update(contact.id, {
           last_whatsapp_sent: new Date().toISOString(),
           whatsapp_sent_count: (contact.whatsapp_sent_count || 0) + 1,
@@ -95,12 +95,17 @@ Deno.serve(async (req) => {
         errors++;
       }
 
-      // Aguarda delayMs a cada BATCH_SIZE mensagens enviadas (não entre cada mensagem)
-      const isLastInBatch = (i + 1) % BATCH_SIZE === 0;
       const isLast = i === contacts.length - 1;
-      if (isLastInBatch && !isLast && delayMs > 0) {
-        console.log(`Lote de ${BATCH_SIZE} enviado. Aguardando ${campaign.delay_seconds}s...`);
-        await new Promise(r => setTimeout(r, delayMs));
+      if (!isLast) {
+        const sentInBatch = (i + 1) % BATCH_SIZE;
+        if (sentInBatch === 0) {
+          // Completou um lote de 20 — pausa de 20 minutos
+          console.log(`Lote de ${BATCH_SIZE} enviado. Pausando por 20 minutos...`);
+          await new Promise(r => setTimeout(r, PAUSE_MS));
+        } else {
+          // Entre mensagens do mesmo lote — aguarda 15 segundos
+          await new Promise(r => setTimeout(r, MSG_INTERVAL_MS));
+        }
       }
     }
 
