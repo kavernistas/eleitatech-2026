@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.28';
 
-// Segredos carregados dinamicamente do AppSettings ou env vars (não no módulo top-level)
-
 const SYSTEM_PROMPT = `Você é um assistente jurídico especializado em direito eleitoral e partidário brasileiro, 
 representando o escritório do Dr. Marcos Eduardo. 
 Seu foco são os serviços:
@@ -20,7 +18,7 @@ const INTENT_PROMPT = `Analise a mensagem de WhatsApp de um lead de diretório p
 - "interest_area": um dos valores: "regularizacao_cnpj", "contas_2025", "ambos", "outros", "nenhum"
 - "intent_score": 0 a 10 (0=sem interesse, 10=quer contratar já)
 - "tags": array de strings relevantes (ex: ["Urgente", "CNPJ", "Contas 2025", "Pendência 2024"])
-- "suggested_status": um dos valores: "contato_feito", "interessado", "proposta_enviada", "atendimento_humano" (baseado no nível de interesse)
+- "suggested_status": um dos valores: "contato_feito", "interessado", "proposta_enviada", "atendimento_humano"
 
 Considere:
 - "interessado" quando o lead faz perguntas sobre preços, prazos, ou serviços específicos
@@ -32,26 +30,25 @@ Considere:
 
 Retorne APENAS o JSON, sem explicações.`;
 
-async function callOpenAI(messages, jsonMode = false) {
+async function callOpenAI(apiKey, messages, jsonMode = false) {
   const body = {
     model: "gpt-4o-mini",
     messages,
     max_tokens: jsonMode ? 300 : 500,
   };
   if (jsonMode) body.response_format = { type: "json_object" };
-
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENAI_KEY}` },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
     body: JSON.stringify(body),
   });
   const data = await res.json();
   return data.choices?.[0]?.message?.content || "";
 }
 
-async function analyzeIntent(messageText) {
+async function analyzeIntent(apiKey, messageText) {
   try {
-    const raw = await callOpenAI([
+    const raw = await callOpenAI(apiKey, [
       { role: "system", content: INTENT_PROMPT },
       { role: "user", content: messageText },
     ], true);
@@ -76,52 +73,35 @@ async function findContactByPhone(base44, phone) {
   const withCountry = normalized.startsWith("55") ? normalized : `55${normalized}`;
   const withoutCountry = withCountry.startsWith("55") ? withCountry.slice(2) : normalized;
   const variants = new Set([withCountry, withoutCountry, normalized]);
-
-  // List all contacts and match locally to handle any phone format variation
   const all = await base44.asServiceRole.entities.Contact.list("-updated_date", 500);
-  const found = all.find(c => {
-    if (!c.phone) return false;
-    const cp = c.phone.replace(/\D/g, "");
-    return variants.has(cp);
-  });
-  return found || null;
+  return all.find(c => c.phone && variants.has(c.phone.replace(/\D/g, ""))) || null;
 }
 
 function resolveStatus(currentStatus, suggestedStatus) {
-  const statusRank = {
-    novo: 0, contato_feito: 1, interessado: 2,
-    proposta_enviada: 3, fechado: 4, atendimento_humano: 5, inativo: -1,
-  };
-  const current = statusRank[currentStatus] ?? 0;
-  const suggested = statusRank[suggestedStatus] ?? 1;
+  const rank = { novo: 0, contato_feito: 1, interessado: 2, proposta_enviada: 3, fechado: 4, atendimento_humano: 5, inativo: -1 };
   if (suggestedStatus === "atendimento_humano") return "atendimento_humano";
-  return suggested > current ? suggestedStatus : currentStatus;
+  return (rank[suggestedStatus] ?? 1) > (rank[currentStatus] ?? 0) ? suggestedStatus : currentStatus;
 }
 
 Deno.serve(async (req) => {
   try {
     if (req.method !== "POST") return Response.json({ ok: true });
 
-    // Parse body first
     let body;
     try { body = await req.json(); } catch { return Response.json({ ok: true }); }
 
-    // Auth: only check x-webhook-secret header if WEBHOOK_SECRET is set
-    // Evolution API key in body is NOT used for auth (changes per instance)
     const expectedSecret = Deno.env.get("WEBHOOK_SECRET") || "";
     if (!expectedSecret) {
-      console.error("WEBHOOK_SECRET não configurado. Requisição rejeitada por segurança.");
+      console.error("WEBHOOK_SECRET não configurado.");
       return Response.json({ error: "Webhook not configured" }, { status: 503 });
     }
     const headerSecret = req.headers.get("x-webhook-secret") || "";
     if (headerSecret !== expectedSecret) {
-      console.log("Auth failed. Wrong webhook secret.");
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const base44 = createClientFromRequest(req);
 
-    // Load Evolution API config from AppSettings
     let appSettingsAll = [];
     try {
       appSettingsAll = await base44.asServiceRole.entities.AppSettings.list();
@@ -137,10 +117,8 @@ Deno.serve(async (req) => {
     const INSTANCE = getSetting('EVOLUTION_INSTANCE_NAME');
     const OPENAI_KEY = getSetting('OPENAI_API_KEY');
 
-    // Only handle messages.upsert
     if (body.event !== "messages.upsert") return Response.json({ ok: true });
 
-    // Evolution API v2 may wrap messages in an array inside body.data or body.data.messages
     let rawMsg = body.data;
     if (Array.isArray(rawMsg)) rawMsg = rawMsg[0];
     if (rawMsg?.messages && Array.isArray(rawMsg.messages)) rawMsg = rawMsg.messages[0];
@@ -148,30 +126,23 @@ Deno.serve(async (req) => {
 
     if (!msg || msg.key?.fromMe) return Response.json({ ok: true });
 
-    // Ignore group messages
     const remoteJid = msg.key?.remoteJid || "";
     if (remoteJid.endsWith("@g.us")) return Response.json({ ok: true });
 
     const senderPhone = remoteJid.replace("@s.whatsapp.net", "").replace(/\D/g, "");
     if (!senderPhone) return Response.json({ ok: true });
 
-    // Extract text — covers all known Evolution API v1/v2 message formats
     const messageText =
       msg.message?.conversation ||
       msg.message?.extendedTextMessage?.text ||
       msg.message?.buttonsResponseMessage?.selectedDisplayText ||
       msg.message?.listResponseMessage?.title ||
       msg.message?.templateButtonReplyMessage?.selectedDisplayText ||
-      msg.body ||
-      msg.text ||
-      "";
+      msg.body || msg.text || "";
 
     const hasMedia = !!(
-      msg.message?.imageMessage ||
-      msg.message?.documentMessage ||
-      msg.message?.audioMessage ||
-      msg.message?.videoMessage ||
-      msg.message?.stickerMessage
+      msg.message?.imageMessage || msg.message?.documentMessage ||
+      msg.message?.audioMessage || msg.message?.videoMessage || msg.message?.stickerMessage
     );
     const senderName = msg.pushName || msg.notifyName || senderPhone;
 
@@ -179,12 +150,9 @@ Deno.serve(async (req) => {
     let contact = await findContactByPhone(base44, senderPhone);
     if (!contact) {
       contact = await base44.asServiceRole.entities.Contact.create({
-        phone: senderPhone,
-        name: senderName,
+        phone: senderPhone, name: senderName,
         email: `whatsapp_${senderPhone}@noemail.local`,
-        source: "whatsapp",
-        status: "novo",
-        whatsapp_conversation: [],
+        source: "whatsapp", status: "novo", whatsapp_conversation: [],
       });
     }
 
@@ -195,32 +163,30 @@ Deno.serve(async (req) => {
       ts: new Date().toISOString(),
     });
 
-    // Human handover — just save, don't reply
+    // --- BLOQUEIOS: verificar ANTES de qualquer resposta automática ---
+
+    // 1. Atendimento humano — salva e para
     if (contact.status === "atendimento_humano") {
       await base44.asServiceRole.entities.Contact.update(contact.id, { whatsapp_conversation: conversation });
       return Response.json({ ok: true });
     }
 
-    // AI Agent paused — just save the message, no AI reply
+    // 2. Agente IA pausado — salva e para (sem nenhuma resposta automática)
     const aiPaused = getSetting('ai_agent_paused') === 'true';
     if (aiPaused) {
       await base44.asServiceRole.entities.Contact.update(contact.id, { whatsapp_conversation: conversation });
       return Response.json({ ok: true, paused: true });
     }
 
-    // Media handler — try to fetch media URL from Evolution API
+    // --- MÍDIA: só responde se agente estiver ativo ---
     if (hasMedia) {
       let mediaUrl = null;
       let mediaType = "documento";
-
       if (msg.message?.imageMessage) mediaType = "imagem";
       else if (msg.message?.audioMessage) mediaType = "áudio";
       else if (msg.message?.videoMessage) mediaType = "vídeo";
-      else if (msg.message?.documentMessage) {
-        mediaType = msg.message.documentMessage.fileName || "documento";
-      }
+      else if (msg.message?.documentMessage) mediaType = msg.message.documentMessage.fileName || "documento";
 
-      // Try to get media from Evolution API
       if (EVO_URL && INSTANCE && msg.key?.id) {
         try {
           const mediaRes = await fetch(`${EVO_URL}/chat/getBase64FromMediaMessage/${INSTANCE}`, {
@@ -233,7 +199,6 @@ Deno.serve(async (req) => {
             const base64 = mediaData.base64 || mediaData.data;
             const mimeType = mediaData.mimetype || "application/octet-stream";
             if (base64) {
-              // Convert base64 to blob and upload to Base44 storage
               const binaryStr = atob(base64);
               const bytes = new Uint8Array(binaryStr.length);
               for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
@@ -247,28 +212,23 @@ Deno.serve(async (req) => {
         }
       }
 
-      const mediaMsg = {
-        role: "user",
-        content: `[Mídia: ${mediaType}]`,
-        media_url: mediaUrl,
-        media_type: mediaType,
-        ts: new Date().toISOString(),
+      conversation[conversation.length - 1] = {
+        role: "user", content: `[Mídia: ${mediaType}]`,
+        media_url: mediaUrl, media_type: mediaType, ts: new Date().toISOString(),
       };
-      // Replace the placeholder message we already pushed
-      conversation[conversation.length - 1] = mediaMsg;
 
       const tags = [...new Set([...(contact.tags || []), "Documento_Recebido"])];
       await base44.asServiceRole.entities.Contact.update(contact.id, {
-        whatsapp_conversation: conversation,
-        tags,
+        whatsapp_conversation: conversation, tags,
         status: resolveStatus(contact.status, "interessado"),
       });
       await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, "Recebemos seu documento! O Dr. Marcos Eduardo irá analisá-lo pessoalmente e retornará em breve. 📋");
       return Response.json({ ok: true });
     }
 
-    const schedulingLink = appSettingsAll.find(s => s.key === 'scheduling_link')?.value || '';
-    const schedulingMsg = appSettingsAll.find(s => s.key === 'scheduling_message')?.value || '';
+    // --- RESPOSTA IA ---
+    const schedulingLink = getSetting('scheduling_link');
+    const schedulingMsg = getSetting('scheduling_message');
 
     const historyForAI = conversation.slice(-10).map(m => ({
       role: m.role === "user" ? "user" : "assistant",
@@ -276,8 +236,8 @@ Deno.serve(async (req) => {
     }));
 
     const [aiReply, intentData] = await Promise.all([
-      callOpenAI([{ role: "system", content: SYSTEM_PROMPT }, ...historyForAI]),
-      analyzeIntent(messageText),
+      callOpenAI(OPENAI_KEY, [{ role: "system", content: SYSTEM_PROMPT }, ...historyForAI]),
+      analyzeIntent(OPENAI_KEY, messageText),
     ]);
 
     const needsHandover = aiReply.includes("[HANDOVER_NEEDED]");
@@ -290,15 +250,10 @@ Deno.serve(async (req) => {
       ? "atendimento_humano"
       : resolveStatus(contact.status, intentData.suggested_status || "contato_feito");
 
-    const updateData = {
-      whatsapp_conversation: conversation,
-      status: finalStatus,
-      tags: mergedTags,
-    };
+    const updateData = { whatsapp_conversation: conversation, status: finalStatus, tags: mergedTags };
 
     const interestRank = { nenhum: 0, outros: 1, regularizacao_cnpj: 2, contas_2025: 2, ambos: 3 };
-    const currentInterest = contact.interest_area || "nenhum";
-    if ((interestRank[intentData.interest_area] || 0) > (interestRank[currentInterest] || 0)) {
+    if ((interestRank[intentData.interest_area] || 0) > (interestRank[contact.interest_area || "nenhum"] || 0)) {
       updateData.interest_area = intentData.interest_area;
     }
 
@@ -309,7 +264,7 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.Contact.update(contact.id, updateData);
     await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, cleanReply);
 
-    // Auto scheduling for high intent
+    // Auto scheduling para leads com alta intenção
     const isHighIntent = intentData.intent_score >= 7;
     const notYetScheduled = !contact.tags?.includes('Agendamento_Enviado');
     if (isHighIntent && schedulingLink && notYetScheduled && finalStatus !== 'atendimento_humano') {
