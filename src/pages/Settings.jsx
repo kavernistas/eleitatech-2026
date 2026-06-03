@@ -10,6 +10,7 @@ import SupabaseStatus from '@/components/settings/SupabaseStatus';
 import SchedulingLinkSettings from '@/components/settings/SchedulingLinkSettings';
 import ApiKeysSettings from '@/components/settings/ApiKeysSettings';
 import WebhookDocs from '@/components/settings/WebhookDocs';
+import AiAgentToggle from '@/components/settings/AiAgentToggle';
 import SmtpImapSettings from '@/components/settings/SmtpImapSettings';
 import TurboSmtpSettings from '@/components/settings/TurboSmtpSettings';
 import { Button } from '@/components/ui/button';
@@ -228,6 +229,10 @@ export default function Settings() {
               <div className="border-t border-border pt-5 mt-5">
                 <h3 className="font-semibold text-foreground text-sm mb-4">Chaves de API</h3>
                 <ApiKeysSettings />
+              </div>
+
+              <div className="border-t border-border pt-5 mt-5">
+                <AiAgentToggle settings={settings} saveMutation={saveMutation} />
               </div>
 
               <div className="border-t border-border pt-5 mt-5">

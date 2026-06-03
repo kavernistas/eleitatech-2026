@@ -260,6 +260,13 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
+    // AI Agent paused — just save the message, no AI reply
+    const aiPaused = getSetting('ai_agent_paused') === 'true';
+    if (aiPaused) {
+      await base44.asServiceRole.entities.Contact.update(contact.id, { whatsapp_conversation: conversation });
+      return Response.json({ ok: true, paused: true });
+    }
+
     const schedulingLink = appSettingsAll.find(s => s.key === 'scheduling_link')?.value || '';
     const schedulingMsg = appSettingsAll.find(s => s.key === 'scheduling_message')?.value || '';
 
