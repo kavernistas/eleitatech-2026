@@ -12,6 +12,7 @@ import Countdown2026 from '@/components/dashboard/Countdown2026';
 import UrgentActions from '@/components/dashboard/UrgentActions';
 import PushNotificationBanner from '@/components/dashboard/PushNotificationBanner';
 import EvolutionStatus from '@/components/dashboard/EvolutionStatus';
+import WhatsappCampaignStatus from '@/components/dashboard/WhatsappCampaignStatus';
 
 const INTEREST_COLORS = {
   regularizacao_cnpj: 'hsl(222,65%,28%)',
@@ -263,6 +264,7 @@ export default function Dashboard() {
 
         {/* Activity + Countdown + Urgent */}
         <div className="space-y-4">
+          <WhatsappCampaignStatus />
           <Countdown2026 />
           <UrgentActions />
           <ActivityFeed />
