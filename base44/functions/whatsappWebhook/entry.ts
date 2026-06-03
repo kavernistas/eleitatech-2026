@@ -195,6 +195,19 @@ Deno.serve(async (req) => {
       ts: new Date().toISOString(),
     });
 
+    // Human handover — just save, don't reply
+    if (contact.status === "atendimento_humano") {
+      await base44.asServiceRole.entities.Contact.update(contact.id, { whatsapp_conversation: conversation });
+      return Response.json({ ok: true });
+    }
+
+    // AI Agent paused — just save the message, no AI reply
+    const aiPaused = getSetting('ai_agent_paused') === 'true';
+    if (aiPaused) {
+      await base44.asServiceRole.entities.Contact.update(contact.id, { whatsapp_conversation: conversation });
+      return Response.json({ ok: true, paused: true });
+    }
+
     // Media handler — try to fetch media URL from Evolution API
     if (hasMedia) {
       let mediaUrl = null;
@@ -252,19 +265,6 @@ Deno.serve(async (req) => {
       });
       await sendWhatsApp(EVO_URL, EVO_KEY, INSTANCE, senderPhone, "Recebemos seu documento! O Dr. Marcos Eduardo irá analisá-lo pessoalmente e retornará em breve. 📋");
       return Response.json({ ok: true });
-    }
-
-    // Human handover — just save, don't reply
-    if (contact.status === "atendimento_humano") {
-      await base44.asServiceRole.entities.Contact.update(contact.id, { whatsapp_conversation: conversation });
-      return Response.json({ ok: true });
-    }
-
-    // AI Agent paused — just save the message, no AI reply
-    const aiPaused = getSetting('ai_agent_paused') === 'true';
-    if (aiPaused) {
-      await base44.asServiceRole.entities.Contact.update(contact.id, { whatsapp_conversation: conversation });
-      return Response.json({ ok: true, paused: true });
     }
 
     const schedulingLink = appSettingsAll.find(s => s.key === 'scheduling_link')?.value || '';
