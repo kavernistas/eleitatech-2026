@@ -79,7 +79,9 @@ export default function Settings() {
 
   const saveMutation = useMutation({
     mutationFn: async (updates) => {
-      const existing = settings.reduce((acc, s) => { acc[s.key] = s; return acc; }, {});
+      // Refresh settings to get latest state and avoid duplicates
+      const latest = await base44.entities.AppSettings.list();
+      const existing = latest.reduce((acc, s) => { acc[s.key] = s; return acc; }, {});
       await Promise.all(
         Object.entries(updates).map(([key, value]) => {
           if (existing[key]) return base44.entities.AppSettings.update(existing[key].id, { value });
