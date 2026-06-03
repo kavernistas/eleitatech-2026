@@ -11,7 +11,6 @@ function personalize(template, contact) {
 }
 
 function extractFirstPhone(phone) {
-  // Handle cases like "(11) 3050-0830 / (11) 98904-5734" — use only the first number
   const first = (phone || '').split(/[\/|,]/)[0].trim();
   const normalized = first.replace(/\D/g, '');
   return normalized.startsWith('55') ? normalized : `55${normalized}`;
@@ -46,11 +45,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'campaign_id e contacts são obrigatórios' }, { status: 400 });
     }
 
-    // Load campaign
     const campaign = await base44.asServiceRole.entities.WhatsappCampaign.get(campaign_id);
     if (!campaign) return Response.json({ error: 'Campanha não encontrada' }, { status: 404 });
 
-    // Load Evolution API settings
     const settings = await base44.asServiceRole.entities.AppSettings.list();
     const sm = settings.reduce((acc, s) => { acc[s.key] = s.value; return acc; }, {});
 
@@ -61,17 +58,15 @@ Deno.serve(async (req) => {
     const INSTANCE = sm['EVOLUTION_INSTANCE_NAME'] || '';
 
     if (!EVO_URL || !EVO_KEY || !INSTANCE) {
-      return Response.json({ error: 'Evolution API não configurada. Configure EVOLUTION_API_URL, EVOLUTION_API_KEY e EVOLUTION_INSTANCE_NAME nas Configurações.' }, { status: 400 });
+      return Response.json({ error: 'Evolution API não configurada.' }, { status: 400 });
     }
 
-    // Update campaign status to "enviando"
-    await base44.asServiceRole.entities.WhatsappCampaign.update(campaign_id, {
-      status: 'enviando',
-    });
+    await base44.asServiceRole.entities.WhatsappCampaign.update(campaign_id, { status: 'enviando' });
 
-    const BATCH_SIZE = 20;          // mensagens por lote
-    const MSG_INTERVAL_MS = 15000;  // 15s entre cada mensagem
-    const PAUSE_MS = 20 * 60 * 1000; // 20min de pausa entre lotes
+    // Lógica: 15s entre cada mensagem, pausa de 20min a cada 20 mensagens
+    const BATCH_SIZE = 20;
+    const MSG_INTERVAL_MS = 15 * 1000;      // 15 segundos
+    const PAUSE_MS = 20 * 60 * 1000;        // 20 minutos
     let sent = 0;
     let errors = 0;
 
@@ -84,7 +79,6 @@ Deno.serve(async (req) => {
       try {
         await sendWhatsAppMessage(EVO_URL, EVO_KEY, INSTANCE, contact.phone, message);
         sent++;
-
         await base44.asServiceRole.entities.Contact.update(contact.id, {
           last_whatsapp_sent: new Date().toISOString(),
           whatsapp_sent_count: (contact.whatsapp_sent_count || 0) + 1,
@@ -97,19 +91,15 @@ Deno.serve(async (req) => {
 
       const isLast = i === contacts.length - 1;
       if (!isLast) {
-        const sentInBatch = (i + 1) % BATCH_SIZE;
-        if (sentInBatch === 0) {
-          // Completou um lote de 20 — pausa de 20 minutos
-          console.log(`Lote de ${BATCH_SIZE} enviado. Pausando por 20 minutos...`);
+        if ((i + 1) % BATCH_SIZE === 0) {
+          console.log(`Lote de ${BATCH_SIZE} enviado (total: ${sent}). Pausando 20 minutos...`);
           await new Promise(r => setTimeout(r, PAUSE_MS));
         } else {
-          // Entre mensagens do mesmo lote — aguarda 15 segundos
           await new Promise(r => setTimeout(r, MSG_INTERVAL_MS));
         }
       }
     }
 
-    // Final campaign update
     await base44.asServiceRole.entities.WhatsappCampaign.update(campaign_id, {
       status: 'enviado',
       total_sent: sent,
