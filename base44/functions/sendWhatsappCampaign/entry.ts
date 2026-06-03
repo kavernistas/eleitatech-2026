@@ -10,9 +10,16 @@ function personalize(template, contact) {
     .replace(/\{\{telefone\}\}/g, contact.phone || '');
 }
 
+function extractFirstPhone(phone) {
+  // Handle cases like "(11) 3050-0830 / (11) 98904-5734" — use only the first number
+  const first = (phone || '').split(/[\/|,]/)[0].trim();
+  const normalized = first.replace(/\D/g, '');
+  return normalized.startsWith('55') ? normalized : `55${normalized}`;
+}
+
 async function sendWhatsAppMessage(evoUrl, evoKey, instance, phone, text) {
-  const normalized = phone.replace(/\D/g, '');
-  const number = normalized.startsWith('55') ? normalized : `55${normalized}`;
+  const number = extractFirstPhone(phone);
+  if (!number || number.length < 10) throw new Error(`Telefone inválido: ${phone}`);
   const res = await fetch(`${evoUrl}/message/sendText/${instance}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'apikey': evoKey },
@@ -62,7 +69,8 @@ Deno.serve(async (req) => {
       status: 'enviando',
     });
 
-    const delayMs = (campaign.delay_seconds ?? 5) * 1000;
+    const delayMs = (campaign.delay_seconds ?? 1800) * 1000;
+    const BATCH_SIZE = 20;
     let sent = 0;
     let errors = 0;
 
@@ -87,8 +95,11 @@ Deno.serve(async (req) => {
         errors++;
       }
 
-      // Delay between messages (skip last)
-      if (i < contacts.length - 1 && delayMs > 0) {
+      // Aguarda delayMs a cada BATCH_SIZE mensagens enviadas (não entre cada mensagem)
+      const isLastInBatch = (i + 1) % BATCH_SIZE === 0;
+      const isLast = i === contacts.length - 1;
+      if (isLastInBatch && !isLast && delayMs > 0) {
+        console.log(`Lote de ${BATCH_SIZE} enviado. Aguardando ${campaign.delay_seconds}s...`);
         await new Promise(r => setTimeout(r, delayMs));
       }
     }

@@ -156,36 +156,25 @@ export default function SendWhatsappModal({ campaign, onClose }) {
     setErrorCount(0);
     setLastError(null);
 
-    const BATCH = 20;
-    let sent = 0;
-    let errors = 0;
+    try {
+      const res = await base44.functions.invoke('sendWhatsappCampaign', {
+        campaign_id: campaign.id,
+        contacts: recipients,
+      });
+      setSentCount(res?.data?.sent || 0);
+      setErrorCount(res?.data?.errors || 0);
 
-    for (let i = 0; i < recipients.length; i += BATCH) {
-      const batch = recipients.slice(i, i + BATCH);
-      try {
-        const res = await base44.functions.invoke('sendWhatsappCampaign', {
-          campaign_id: campaign.id,
-          contacts: batch,
-        });
-        sent += res?.data?.sent || 0;
-        errors += res?.data?.errors || 0;
-        setSentCount(sent);
-        setErrorCount(errors);
-
-        if (res?.data?.error) {
-          setLastError(res.data.error);
-          setStep('error');
-          return;
-        }
-      } catch (err) {
-        const msg = err?.response?.data?.error || err.message;
-        setLastError(msg);
+      if (res?.data?.error) {
+        setLastError(res.data.error);
         setStep('error');
         return;
       }
+      setStep('done');
+    } catch (err) {
+      const msg = err?.response?.data?.error || err.message;
+      setLastError(msg);
+      setStep('error');
     }
-
-    setStep('done');
   };
 
   return (
