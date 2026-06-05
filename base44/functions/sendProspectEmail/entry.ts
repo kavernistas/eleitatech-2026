@@ -22,11 +22,11 @@ function buildHtml(contact, tpl, waNumber = '5511999990000') {
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:40px 20px;">
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-<tr><td style="background:linear-gradient(135deg,#1a3a6b,#2d5fa6);padding:36px 40px;text-align:center;">
-  <p style="margin:0 0 4px;color:#c8d8f0;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Escritório Contábil</p>
-  <h1 style="margin:0;color:#f0c040;font-size:22px;font-weight:700;">Marcos Eduardo</h1>
-  <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Assessoria em Contabilidade Eleitoral · CRC/SP 151562/O-0</p>
-  <p style="margin:4px 0 0;color:#a0b4cc;font-size:12px;">contato@marcoseduardocontabil.com.br</p>
+<tr><td style="background:linear-gradient(135deg,#0d2b5e,#1a4fa8);padding:36px 40px;text-align:center;">
+  <p style="margin:0 0 4px;color:#90b8e8;font-size:11px;text-transform:uppercase;letter-spacing:2px;">Escritório Contábil</p>
+  <h1 style="margin:0;color:#f5c842;font-size:24px;font-weight:700;letter-spacing:0.5px;">Marcos Eduardo</h1>
+  <p style="margin:6px 0 0;color:#b8d4f0;font-size:13px;">Assessoria em Contabilidade Eleitoral · CRC/SP 151562/O-0</p>
+  <p style="margin:4px 0 0;color:#90b8e8;font-size:12px;">contato@marcoseduardocontabil.com.br · (11) 98987-1972</p>
 </td></tr>
 <tr><td style="padding:40px;">
   <p style="margin:0 0 8px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${tpl.headline}</p>
@@ -200,11 +200,11 @@ Deno.serve(async (req) => {
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:40px 20px;">
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);max-width:600px;">
-<tr><td style="background:linear-gradient(135deg,#1a3a6b,#2d5fa6);padding:32px 40px;text-align:center;">
-  <p style="margin:0 0 4px;color:#c8d8f0;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Escritório Contábil</p>
-  <h1 style="margin:0;color:#f0c040;font-size:22px;font-weight:700;">Marcos Eduardo</h1>
-  <p style="margin:6px 0 0;color:#c8d8f0;font-size:13px;">Assessoria em Contabilidade Eleitoral · CRC/SP 151562/O-0</p>
-  <p style="margin:4px 0 0;color:#a0b4cc;font-size:12px;">contato@marcoseduardocontabil.com.br</p>
+<tr><td style="background:linear-gradient(135deg,#0d2b5e,#1a4fa8);padding:32px 40px;text-align:center;">
+  <p style="margin:0 0 4px;color:#90b8e8;font-size:11px;text-transform:uppercase;letter-spacing:2px;">Escritório Contábil</p>
+  <h1 style="margin:0;color:#f5c842;font-size:24px;font-weight:700;letter-spacing:0.5px;">Marcos Eduardo</h1>
+  <p style="margin:6px 0 0;color:#b8d4f0;font-size:13px;">Assessoria em Contabilidade Eleitoral · CRC/SP 151562/O-0</p>
+  <p style="margin:4px 0 0;color:#90b8e8;font-size:12px;">contato@marcoseduardocontabil.com.br · (11) 98987-1972</p>
 </td></tr>
 <tr><td style="padding:40px;">${rawHtml}</td></tr>
 ${buildUnsubscribeFooter(contact.email)}

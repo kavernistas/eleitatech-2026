@@ -111,16 +111,11 @@ export default function EmailPreview({ subject, previewText, blocks, senderName 
         {/* Email wrapper */}
         <div style={{ maxWidth: '560px', margin: '0 auto', padding: '24px 16px' }}>
           {/* Logo header */}
-          <div style={{ background: '#1e3a5f', borderRadius: '10px 10px 0 0', padding: '20px 28px', marginBottom: '0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg, #c5991a, #e4b84a)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>📊</span>
-              </div>
-              <div>
-                <div style={{ color: '#fff', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '14px' }}>Escritório Contábil</div>
-                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase' }}>Assessoria em Contabilidade Eleitoral</div>
-              </div>
-            </div>
+          <div style={{ background: 'linear-gradient(135deg, #0d2b5e, #1a4fa8)', borderRadius: '10px 10px 0 0', padding: '24px 28px', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 4px', color: '#90b8e8', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Escritório Contábil</p>
+            <h2 style={{ margin: '0', color: '#f5c842', fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '20px', letterSpacing: '0.5px' }}>Marcos Eduardo</h2>
+            <p style={{ margin: '5px 0 0', color: '#b8d4f0', fontSize: '12px' }}>Assessoria em Contabilidade Eleitoral · CRC/SP 151562/O-0</p>
+            <p style={{ margin: '3px 0 0', color: '#90b8e8', fontSize: '11px' }}>contato@marcoseduardocontabil.com.br · (11) 98987-1972</p>
           </div>
 
           {/* Content area */}
