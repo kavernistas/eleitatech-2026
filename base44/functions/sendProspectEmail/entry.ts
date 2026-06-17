@@ -2,7 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const APP_URL = Deno.env.get('APP_PUBLIC_URL') || 'https://eleita-tech-2026.base44.app';
 const APP_ID = Deno.env.get('BASE44_APP_ID');
-const TRACK_BASE = `https://backend.base44.app/api/apps/${APP_ID}/functions/trackEmail`;
+const WEBHOOK_SECRET = Deno.env.get('WEBHOOK_SECRET') || '';
+const TRACK_BASE = `https://backend.base44.app/api/apps/${APP_ID}/functions/trackEmail?s=${encodeURIComponent(WEBHOOK_SECRET)}`;
 
 function unsubscribeUrl(email) {
   const encoded = btoa(unescape(encodeURIComponent(email)));
@@ -106,7 +107,7 @@ function injectTracking(html, campaignId, contactId) {
   if (!campaignId || !contactId) return html;
 
   // Pixel de abertura — injetado antes de </body>
-  const pixelUrl = `${TRACK_BASE}?type=open&cid=${encodeURIComponent(campaignId)}&eid=${encodeURIComponent(contactId)}`;
+  const pixelUrl = `${TRACK_BASE}&type=open&cid=${encodeURIComponent(campaignId)}&eid=${encodeURIComponent(contactId)}`;
   const pixel = `<img src="${pixelUrl}" width="1" height="1" style="display:none" alt="" />`;
 
   // Reescrever links externos (não unsubscribe, não imagens)
@@ -115,7 +116,7 @@ function injectTracking(html, campaignId, contactId) {
     (match, url) => {
       // Não rastrear links do próprio sistema
       if (url.includes(APP_URL) || url.includes('unsubscribe') || url.includes('base44.app')) return match;
-      const trackUrl = `${TRACK_BASE}?type=click&cid=${encodeURIComponent(campaignId)}&eid=${encodeURIComponent(contactId)}&url=${encodeURIComponent(url)}`;
+      const trackUrl = `${TRACK_BASE}&type=click&cid=${encodeURIComponent(campaignId)}&eid=${encodeURIComponent(contactId)}&url=${encodeURIComponent(url)}`;
       return `href="${trackUrl}"`;
     }
   );

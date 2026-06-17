@@ -1,4 +1,4 @@
-import { createClientFromRequest, createClient } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // 1x1 transparent GIF
 const PIXEL = new Uint8Array([
@@ -12,13 +12,15 @@ Deno.serve(async (req) => {
   const cid = url.searchParams.get('cid');   // campaign id
   const eid = url.searchParams.get('eid');   // contact id
   const dest = url.searchParams.get('url');  // destination url (for clicks)
+  const secret = url.searchParams.get('s');  // webhook secret for auth
+
+  const expectedSecret = Deno.env.get('WEBHOOK_SECRET') || '';
 
   // Fire-and-forget tracking (don't block the response)
-  if (cid && eid && (type === 'open' || type === 'click')) {
+  if (cid && eid && (type === 'open' || type === 'click') && secret === expectedSecret) {
     (async () => {
       try {
-        const appId = Deno.env.get('BASE44_APP_ID');
-        const base44 = createClient({ appId });
+        const base44 = createClientFromRequest(req);
 
         if (type === 'open') {
           const [contacts, campaigns] = await Promise.all([
